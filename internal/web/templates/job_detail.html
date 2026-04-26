@@ -1,0 +1,67 @@
+{{ define "content" }}
+<div class="container-fluid app-content">
+  <header class="app-page-header">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="app-kicker">{{ .StatusLabel }}</span>
+        <span class="text-secondary small">Jobs / Logs</span>
+      </div>
+      <h1 class="app-page-title">{{ .Heading }}</h1>
+      <p class="app-page-description">{{ .Description }}</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="/jobs">{{ .PrimaryAction }}</a>
+  </header>
+
+  <div class="app-detail-grid">
+    <section class="app-panel">
+      <div class="app-panel-header">
+        <div>
+          <h2 class="app-panel-title">Job detail</h2>
+          <p class="app-panel-subtitle">Short execution summary and linked records</p>
+        </div>
+        <span class="badge text-bg-{{ statusClass .Job.Job.Status }}">{{ .Job.StatusLabel }}</span>
+      </div>
+      <dl class="app-description-list">
+        <div>
+          <dt>Type</dt>
+          <dd>{{ .Job.TypeLabel }}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>{{ .Job.StatusLabel }}</dd>
+        </div>
+        <div>
+          <dt>Started at</dt>
+          <dd>{{ .Job.StartedAt }}</dd>
+        </div>
+        <div>
+          <dt>Finished at</dt>
+          <dd>{{ .Job.FinishedAt }}</dd>
+        </div>
+        <div>
+          <dt>Certificate</dt>
+          <dd>{{ .Job.CertificateLabel }}</dd>
+        </div>
+        <div>
+          <dt>Kong target</dt>
+          <dd>{{ .Job.KongTargetLabel }}</dd>
+        </div>
+        <div>
+          <dt>Message</dt>
+          <dd>{{ .Job.Job.Message }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="app-panel">
+      <div class="app-panel-header">
+        <div>
+          <h2 class="app-panel-title">Full logs</h2>
+          <p class="app-panel-subtitle">Stored output for debugging failed or incomplete runs</p>
+        </div>
+      </div>
+      <pre class="app-log-block">{{ .Job.Job.Log }}</pre>
+    </section>
+  </div>
+</div>
+{{ end }}

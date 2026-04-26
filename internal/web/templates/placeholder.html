@@ -1,0 +1,59 @@
+{{ define "content" }}
+<div class="container-fluid app-content">
+  <header class="app-page-header">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="app-kicker">{{ .StatusLabel }}</span>
+        <span class="text-secondary small">Internal tool</span>
+      </div>
+      <h1 class="app-page-title">{{ .Heading }}</h1>
+      <p class="app-page-description">{{ .Description }}</p>
+    </div>
+    <button class="btn btn-primary" type="button" disabled>{{ .PrimaryAction }}</button>
+  </header>
+
+  <section class="app-metrics" aria-label="Summary">
+    {{ range .Metrics }}
+    <div class="app-metric">
+      <span class="app-metric-label">{{ .Label }}</span>
+      <span class="app-metric-value text-{{ .Tone }}">{{ .Value }}</span>
+    </div>
+    {{ end }}
+  </section>
+
+  <section class="app-panel">
+    <div class="app-panel-header">
+      <div>
+        <h2 class="app-panel-title">{{ .Heading }}</h2>
+        <p class="app-panel-subtitle">Current workspace state</p>
+      </div>
+      <span class="badge text-bg-secondary">Empty</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table app-table align-middle mb-0">
+        <thead>
+          <tr>
+            {{ range .Columns }}
+            <th scope="col">{{ . }}</th>
+            {{ end }}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="{{ len .Columns }}">
+              <div class="app-empty-state">
+                <span class="app-empty-icon"></span>
+                <div>
+                  <h3>{{ .EmptyTitle }}</h3>
+                  <p>{{ .EmptyText }}</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{{ end }}

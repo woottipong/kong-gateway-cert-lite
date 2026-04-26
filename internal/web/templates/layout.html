@@ -1,0 +1,57 @@
+{{ define "layout" }}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ .Title }} - kong-cert-lite</title>
+  <script>
+    (function () {
+      var theme = localStorage.getItem("kong-cert-lite-theme");
+      if (theme === "light") {
+        document.documentElement.dataset.theme = "light";
+      }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-brand">
+        <span class="app-brand-mark">K</span>
+        <span>
+          <span class="app-brand-name">kong-cert-lite</span>
+          <span class="app-brand-subtitle">Certificate control plane</span>
+        </span>
+      </div>
+      <nav class="nav nav-pills flex-column gap-1" aria-label="Main navigation">
+        <a class="nav-link {{ if eq .Active "certificates" }}active{{ end }}" href="/certificates">Certificates</a>
+        <a class="nav-link {{ if eq .Active "kong-targets" }}active{{ end }}" href="/kong-targets">Kong Targets</a>
+        <a class="nav-link {{ if eq .Active "jobs" }}active{{ end }}" href="/jobs">Jobs / Logs</a>
+        <a class="nav-link {{ if eq .Active "settings" }}active{{ end }}" href="/settings">Settings</a>
+      </nav>
+      <div class="app-sidebar-footer">
+        <div>
+          <span class="badge rounded-pill text-bg-light border">MVP</span>
+          <span class="text-secondary small d-block mt-2">Local workspace</span>
+        </div>
+        <button class="app-theme-toggle" type="button" data-theme-toggle aria-label="Toggle light theme" aria-pressed="false">
+          <span data-theme-toggle-icon>☾</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      {{ template "content" . }}
+    </main>
+  </div>
+  <script src="/static/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
+{{ end }}

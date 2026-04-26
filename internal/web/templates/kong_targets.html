@@ -1,0 +1,89 @@
+{{ define "content" }}
+<div class="container-fluid app-content">
+  <header class="app-page-header">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="app-kicker">{{ .StatusLabel }}</span>
+        <span class="text-secondary small">Kong Admin API</span>
+      </div>
+      <h1 class="app-page-title">{{ .Heading }}</h1>
+      <p class="app-page-description">{{ .Description }}</p>
+    </div>
+    <a class="btn btn-primary" href="/kong-targets/new">{{ .PrimaryAction }}</a>
+  </header>
+
+  <section class="app-metrics" aria-label="Summary">
+    {{ range .Metrics }}
+    <div class="app-metric">
+      <span class="app-metric-label">{{ .Label }}</span>
+      <span class="app-metric-value text-{{ .Tone }}">{{ .Value }}</span>
+    </div>
+    {{ end }}
+  </section>
+
+  <section class="app-panel">
+    <div class="app-panel-header">
+      <div>
+        <h2 class="app-panel-title">Kong target inventory</h2>
+        <p class="app-panel-subtitle">Admin API metadata for future connectivity checks and certificate sync</p>
+      </div>
+      <span class="badge text-bg-secondary">{{ len .Targets }} records</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table app-table align-middle mb-0">
+        <thead>
+          <tr>
+            {{ range .Columns }}
+            <th scope="col">{{ . }}</th>
+            {{ end }}
+          </tr>
+        </thead>
+        <tbody>
+          {{ if .Targets }}
+          {{ range .Targets }}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ .Target.Name }}</div>
+              <div class="text-secondary small">Last checked: {{ .LastChecked }}</div>
+            </td>
+            <td>{{ .Target.Environment }}</td>
+            <td><code>{{ .Target.AdminURL }}</code></td>
+            <td>
+              <div>{{ .AuthLabel }}</div>
+              {{ if .Target.AuthHeaderName }}<div class="text-secondary small">{{ .Target.AuthHeaderName }}</div>{{ end
+              }}
+            </td>
+            <td><span class="badge text-bg-{{ statusClass .Target.Status }}">{{ .StatusLabel }}</span></td>
+            <td>
+              <div class="d-flex gap-2">
+                <form method="post" action="/kong-targets/{{ .Target.ID }}/test">
+                  <button class="btn btn-outline-primary btn-sm" type="submit">Test</button>
+                </form>
+                <a class="btn btn-outline-secondary btn-sm" href="/kong-targets/{{ .Target.ID }}/edit">Edit</a>
+                <form method="post" action="/kong-targets/{{ .Target.ID }}/delete">
+                  <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {{ end }}
+          {{ else }}
+          <tr>
+            <td colspan="{{ len .Columns }}">
+              <div class="app-empty-state">
+                <span class="app-empty-icon"></span>
+                <div>
+                  <h3>{{ .EmptyTitle }}</h3>
+                  <p>{{ .EmptyText }}</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{{ end }}
