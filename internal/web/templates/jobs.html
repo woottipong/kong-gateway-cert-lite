@@ -48,7 +48,7 @@
                 <div class="text-secondary small">{{ .FinishedAt }}</div>
               </td>
               <td>{{ .TypeLabel }}</td>
-              <td>{{ .CertificateLabel }}</td>
+              <td>{{ if .Job.CertificateID }}<a href="/certificates/{{ .Job.CertificateID }}">{{ .CertificateLabel }}</a>{{ else }}{{ .CertificateLabel }}{{ end }}</td>
               <td>{{ .KongTargetLabel }}</td>
               <td><span class="badge text-bg-{{ statusClass .Job.Status }}">{{ .StatusLabel }}</span></td>
               <td>{{ .Job.Message }}</td>

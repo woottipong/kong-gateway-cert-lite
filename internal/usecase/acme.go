@@ -116,25 +116,23 @@ func (uc *ACMEUseCase) IssueCertificate(ctx context.Context, certificateID int64
 }
 
 func (uc *ACMEUseCase) failIssue(ctx context.Context, certificateID int64, jobID int64, cause error) error {
-	if err := uc.certificates.UpdateStatus(ctx, certificateID, domain.CertificateStatusFailed); err != nil {
-		return err
-	}
+	// Always attempt both operations so the job is never left in a running state.
+	// Combine any persistence errors with errors.Join rather than returning early.
+	statusErr := uc.certificates.UpdateStatus(ctx, certificateID, domain.CertificateStatusFailed)
 
 	logOutput := strings.Join([]string{
 		"Certificate issue failed",
 		cause.Error(),
 	}, "\n")
 
-	if err := uc.jobs.Complete(ctx, JobCompleteInput{
+	jobErr := uc.jobs.Complete(ctx, JobCompleteInput{
 		ID:      jobID,
 		Status:  string(domain.JobStatusFailed),
 		Message: cause.Error(),
 		Log:     logOutput,
-	}); err != nil {
-		return err
-	}
+	})
 
-	return nil
+	return errors.Join(statusErr, jobErr)
 }
 
 func (uc *ACMEUseCase) writeIssuedFiles(certificateID int64, fullChainPEM []byte, privateKeyPEM []byte) (string, string, error) {

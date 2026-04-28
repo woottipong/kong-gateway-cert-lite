@@ -23,6 +23,7 @@ type CertificateRepository interface {
 	Delete(ctx context.Context, id int64) error
 	ListKongTargets(ctx context.Context) ([]domain.KongTarget, error)
 	ListSyncTargets(ctx context.Context, certificateID int64) ([]domain.CertificateKongTarget, error)
+	CountLinkedTargetsByCertificate(ctx context.Context) (map[int64]int, error)
 	SetLinkedTargets(ctx context.Context, certificateID int64, targetIDs []int64) error
 }
 
@@ -86,14 +87,16 @@ func (uc *CertificateUseCase) List(ctx context.Context) ([]CertificateView, erro
 		return nil, err
 	}
 
+	// Fetch all linked target counts in a single query to avoid N+1 per certificate.
+	counts, err := uc.repository.CountLinkedTargetsByCertificate(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	views := make([]CertificateView, 0, len(certificates))
 	for _, certificate := range certificates {
 		view := buildCertificateView(certificate)
-		links, err := uc.repository.ListSyncTargets(ctx, certificate.ID)
-		if err != nil {
-			return nil, err
-		}
-		view.LinkedTargetCount = len(links)
+		view.LinkedTargetCount = counts[certificate.ID]
 		views = append(views, view)
 	}
 

@@ -241,6 +241,33 @@ func (r *CertificateRepository) ListKongTargets(ctx context.Context) ([]domain.K
 	return targets, nil
 }
 
+func (r *CertificateRepository) CountLinkedTargetsByCertificate(ctx context.Context) (map[int64]int, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT certificate_id, COUNT(*)
+		FROM certificate_kong_targets
+		GROUP BY certificate_id
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("count linked targets by certificate: %w", err)
+	}
+	defer rows.Close()
+
+	counts := make(map[int64]int)
+	for rows.Next() {
+		var certID int64
+		var count int
+		if err := rows.Scan(&certID, &count); err != nil {
+			return nil, fmt.Errorf("scan linked target count: %w", err)
+		}
+		counts[certID] = count
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate linked target counts: %w", err)
+	}
+
+	return counts, nil
+}
+
 func (r *CertificateRepository) ListSyncTargets(ctx context.Context, certificateID int64) ([]domain.CertificateKongTarget, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT id, certificate_id, kong_target_id, kong_certificate_id,

@@ -45,7 +45,12 @@ func NewLegoClient(accountDir string, letsEncryptEnv string, cloudflareToken str
 }
 
 func (c *LegoClient) Issue(ctx context.Context, request usecase.ACMEIssueRequest) (usecase.ACMEIssueResult, error) {
-	_ = ctx
+	// lego does not propagate context into the DNS-01 polling loop, so mid-challenge
+	// cancellation is not possible. We check here to fail fast if the caller has
+	// already cancelled before the long-running DNS challenge begins.
+	if err := ctx.Err(); err != nil {
+		return usecase.ACMEIssueResult{}, fmt.Errorf("issue cancelled before DNS challenge: %w", err)
+	}
 
 	if strings.TrimSpace(c.cloudflareToken) == "" {
 		return usecase.ACMEIssueResult{}, fmt.Errorf("cloudflare dns api token is not configured")

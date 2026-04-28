@@ -55,8 +55,7 @@
           <textarea class="form-control {{ if fieldError .Errors " snis" }}is-invalid{{ end }}" id="snis" name="snis"
             rows="5" placeholder="example.com&#10;*.example.com" {{ if .DomainsAndSNILock }}disabled{{ end
             }}>{{ .Form.SNIsText }}</textarea>
-          <div class="form-text">{{ if .DomainsAndSNILock }}SNI values are locked after the certificate has been
-            issued.{{ else }}These names will be linked to Kong in a later task.{{ end }}</div>
+          <div class="form-text">{{ if .DomainsAndSNILock }}SNI values are locked after the certificate has been issued.{{ else }}These names will be linked to Kong in a later task.{{ end }}</div>
           {{ with fieldError .Errors "snis" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
         </div>
         <div class="col-12 col-lg-6">
