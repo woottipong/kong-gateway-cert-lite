@@ -2,10 +2,7 @@
 <div class="container-fluid app-content">
   <header class="app-page-header">
     <div>
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <span class="app-kicker">{{ .StatusLabel }}</span>
-        <span class="text-secondary small">Kong Targets</span>
-      </div>
+
       <h1 class="app-page-title">{{ .Heading }}</h1>
       <p class="app-page-description">{{ .Description }}</p>
     </div>
@@ -22,7 +19,8 @@
     <div class="app-panel-header">
       <div>
         <h2 class="app-panel-title">Target metadata</h2>
-        <p class="app-panel-subtitle">Secret values are stored for later use and are never rendered back in plain text</p>
+        <p class="app-panel-subtitle">Secret values are stored for later use and are never rendered back in plain text
+        </p>
       </div>
       <span class="badge text-bg-secondary">{{ if .IsEdit }}Edit{{ else }}New{{ end }}</span>
     </div>
@@ -31,36 +29,45 @@
       <div class="row g-3">
         <div class="col-12 col-lg-6">
           <label class="form-label" for="name">Target name</label>
-          <input class="form-control {{ if fieldError .Errors "name" }}is-invalid{{ end }}" id="name" name="name" value="{{ .Form.Name }}" placeholder="Production Kong">
+          <input class="form-control {{ if fieldError .Errors " name" }}is-invalid{{ end }}" id="name" name="name"
+            value="{{ .Form.Name }}" placeholder="Production Kong">
           {{ with fieldError .Errors "name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
         </div>
         <div class="col-12 col-lg-6">
           <label class="form-label" for="environment">Environment</label>
-          <input class="form-control {{ if fieldError .Errors "environment" }}is-invalid{{ end }}" id="environment" name="environment" value="{{ .Form.Environment }}" placeholder="production">
+          <input class="form-control {{ if fieldError .Errors " environment" }}is-invalid{{ end }}" id="environment"
+            name="environment" value="{{ .Form.Environment }}" placeholder="production">
           {{ with fieldError .Errors "environment" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
         </div>
         <div class="col-12">
           <label class="form-label" for="admin_url">Admin API URL</label>
-          <input class="form-control {{ if fieldError .Errors "admin_url" }}is-invalid{{ end }}" id="admin_url" name="admin_url" value="{{ .Form.AdminURL }}" placeholder="https://kong-admin.internal:8444">
+          <input class="form-control {{ if fieldError .Errors " admin_url" }}is-invalid{{ end }}" id="admin_url"
+            name="admin_url" value="{{ .Form.AdminURL }}" placeholder="https://kong-admin.internal:8444">
           <div class="form-text">Use the private Admin API endpoint reachable by this app.</div>
           {{ with fieldError .Errors "admin_url" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
         </div>
         <div class="col-12 col-lg-4">
           <label class="form-label" for="auth_type">Auth type</label>
-          <select class="form-select {{ if fieldError .Errors "auth_type" }}is-invalid{{ end }}" id="auth_type" name="auth_type">
+          <select class="form-select {{ if fieldError .Errors " auth_type" }}is-invalid{{ end }}" id="auth_type"
+            name="auth_type">
             <option value="none" {{ if eq .Form.AuthType "none" }}selected{{ end }}>None</option>
-            <option value="custom-header" {{ if eq .Form.AuthType "custom-header" }}selected{{ end }}>Custom header</option>
+            <option value="custom-header" {{ if eq .Form.AuthType "custom-header" }}selected{{ end }}>Custom header
+            </option>
           </select>
           {{ with fieldError .Errors "auth_type" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
         </div>
         <div class="col-12 col-lg-4">
           <label class="form-label" for="auth_header_name">Header name</label>
-          <input class="form-control {{ if fieldError .Errors "auth_header_name" }}is-invalid{{ end }}" id="auth_header_name" name="auth_header_name" value="{{ .Form.AuthHeaderName }}" placeholder="Kong-Admin-Token">
+          <input class="form-control {{ if fieldError .Errors " auth_header_name" }}is-invalid{{ end }}"
+            id="auth_header_name" name="auth_header_name" value="{{ .Form.AuthHeaderName }}"
+            placeholder="Kong-Admin-Token">
           {{ with fieldError .Errors "auth_header_name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
         </div>
         <div class="col-12 col-lg-4">
           <label class="form-label" for="auth_header_value">Header value</label>
-          <input class="form-control {{ if fieldError .Errors "auth_header_value" }}is-invalid{{ end }}" id="auth_header_value" name="auth_header_value" type="password" value="" autocomplete="new-password" placeholder="{{ if .Form.HasSecret }}Leave blank to keep existing value{{ else }}Secret value{{ end }}">
+          <input class="form-control {{ if fieldError .Errors " auth_header_value" }}is-invalid{{ end }}"
+            id="auth_header_value" name="auth_header_value" type="password" value="" autocomplete="new-password"
+            placeholder="{{ if .Form.HasSecret }}Leave blank to keep existing value{{ else }}Secret value{{ end }}">
           {{ with fieldError .Errors "auth_header_value" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
         </div>
       </div>
@@ -68,7 +75,8 @@
 
     <div class="app-form-footer">
       <a class="btn btn-outline-secondary" href="/kong-targets">Cancel</a>
-      <button class="btn btn-primary" type="submit">{{ if .IsEdit }}Save changes{{ else }}Create target{{ end }}</button>
+      <button class="btn btn-primary" type="submit">{{ if .IsEdit }}Save changes{{ else }}Create target{{ end
+        }}</button>
     </div>
   </form>
 </div>

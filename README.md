@@ -9,7 +9,7 @@ The current implementation has:
 - SQLite database and embedded migrations
 - Clean Architecture package layout
 - Server-rendered HTML with Bootstrap 5
-- Green Deck dark-first UI with light/dark toggle
+- Modern premium minimal light-first UI
 - Certificate create, edit, delete, list, and detail flow
 - Kong target create, edit, delete, list, and connectivity test flow
 - Job list/detail pages backed by SQLite
@@ -202,13 +202,13 @@ Full architecture notes live in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## UI
 
-The UI uses the Green Deck design direction:
+The UI uses a modern premium minimal design direction:
 
-- Dark-first
-- Spotify green accent `#1DB954`
+- Light-first operational console
+- Restrained green accent for primary actions and important status
 - Plus Jakarta Sans and JetBrains Mono from Google Fonts
 - Bootstrap 5 local static assets
-- Small JavaScript only for theme toggle
+- Small JavaScript only for focused interaction polish
 
 Static assets are embedded from:
 

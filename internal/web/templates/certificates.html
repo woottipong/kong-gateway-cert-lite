@@ -2,10 +2,6 @@
 <div class="container-fluid app-content">
     <header class="app-page-header">
         <div>
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="app-kicker">{{ .StatusLabel }}</span>
-                <span class="text-secondary small">Internal tool</span>
-            </div>
             <h1 class="app-page-title">{{ .Heading }}</h1>
             <p class="app-page-description">{{ .Description }}</p>
         </div>
@@ -21,7 +17,7 @@
         {{ end }}
     </section>
 
-    <section class="app-panel">
+    <section class="app-panel" data-list-panel>
         <div class="app-panel-header">
             <div>
                 <h2 class="app-panel-title">Certificate inventory</h2>
@@ -69,13 +65,15 @@
                             <div class="app-certificate-name">
                                 <span class="fw-semibold">{{ .Certificate.PrimaryDomain }}</span>
                                 <span class="text-secondary small">{{ .Certificate.Name }}</span>
-                                <span class="text-secondary small">{{ .Type }} certificate · {{ len .Certificate.Domains }} domains</span>
+                                <span class="text-secondary small">{{ .Type }} certificate · {{ len .Certificate.Domains
+                                    }} domains</span>
                             </div>
                         </td>
                         <td>
                             <div class="app-certificate-lifecycle">
                                 <span class="app-status-line">
-                                    <span class="app-status-dot app-status-dot-{{ statusClass .Certificate.Status }}"></span>
+                                    <span
+                                        class="app-status-dot app-status-dot-{{ statusClass .Certificate.Status }}"></span>
                                     <span>{{ .StatusLabel }}</span>
                                 </span>
                                 <span>Expires: {{ .Expires }}</span>
@@ -101,7 +99,6 @@
                                     data-bs-toggle="dropdown" aria-expanded="false">Actions</button>
                                 <div class="dropdown-menu dropdown-menu-end">
                                     <a class="dropdown-item" href="/certificates/{{ .Certificate.ID }}/edit">Edit</a>
-                                    <a class="dropdown-item" href="/certificates/{{ .Certificate.ID }}">View detail</a>
                                     <div class="dropdown-divider"></div>
                                     <form method="post" action="/certificates/{{ .Certificate.ID }}/delete"
                                         data-confirm="Delete this certificate metadata and linked target mappings?">

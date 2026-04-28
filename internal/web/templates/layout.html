@@ -1,19 +1,23 @@
 {{ define "layout" }}
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ .Title }} - kong-cert-lite</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/static/bootstrap/bootstrap.min.css">
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
+
 <body>
   <div class="app-shell">
-    <aside class="app-sidebar">
+    <header class="app-sidebar">
       <div class="app-brand">
         <span class="app-brand-mark">K</span>
         <span>
@@ -21,22 +25,14 @@
           <span class="app-brand-subtitle">Certificate control plane</span>
         </span>
       </div>
-      <nav class="nav nav-pills flex-column gap-1" aria-label="Main navigation">
+      <nav class="nav nav-pills gap-1" aria-label="Main navigation">
         <a class="nav-link {{ if eq .Active "certificates" }}active{{ end }}" href="/certificates">Certificates</a>
         <a class="nav-link {{ if eq .Active "kong-targets" }}active{{ end }}" href="/kong-targets">Kong Targets</a>
         <a class="nav-link {{ if eq .Active "jobs" }}active{{ end }}" href="/jobs">Jobs / Logs</a>
         <a class="nav-link {{ if eq .Active "settings" }}active{{ end }}" href="/settings">Settings</a>
       </nav>
-      <div class="app-sidebar-footer">
-        <div>
-          <span class="badge rounded-pill text-bg-light border">MVP</span>
-          <span class="text-secondary small d-block mt-2">Local workspace</span>
-        </div>
-        <button class="app-theme-toggle" type="button" data-theme-toggle aria-label="Toggle light and dark theme">
-          <span data-theme-toggle-icon>Dark</span>
-        </button>
-      </div>
-    </aside>
+
+    </header>
 
     <main class="app-main">
       {{ with .Flash }}
@@ -51,7 +47,8 @@
     </main>
   </div>
   <div class="app-confirm-backdrop" data-confirm-backdrop hidden>
-    <section class="app-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title" aria-describedby="app-confirm-message" tabindex="-1">
+    <section class="app-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title"
+      aria-describedby="app-confirm-message" tabindex="-1">
       <div class="app-confirm-icon" data-confirm-icon aria-hidden="true">!</div>
       <div class="app-confirm-copy">
         <p class="app-confirm-kicker" data-confirm-kicker>Confirm action</p>
@@ -65,8 +62,8 @@
     </section>
   </div>
   <script src="/static/bootstrap/bootstrap.bundle.min.js"></script>
-  <script src="/static/js/theme.js"></script>
   <script src="/static/js/actions.js"></script>
 </body>
+
 </html>
 {{ end }}

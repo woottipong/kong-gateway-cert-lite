@@ -56,7 +56,7 @@ func TestPlaceholderPagesRenderLayout(t *testing.T) {
 				t.Fatalf("expected status 200, got %d", resp.StatusCode)
 			}
 			for _, want := range []string{
-				`<aside class="app-sidebar">`,
+				`<header class="app-sidebar">`,
 				`class="app-metrics"`,
 				`class="app-panel"`,
 				`href="/static/bootstrap/bootstrap.min.css"`,
@@ -89,7 +89,6 @@ func TestStaticAssets(t *testing.T) {
 		"/static/bootstrap/bootstrap.min.css",
 		"/static/bootstrap/bootstrap.bundle.min.js",
 		"/static/css/app.css",
-		"/static/js/theme.js",
 		"/static/js/actions.js",
 	}
 
@@ -390,6 +389,9 @@ func TestEditCertificateRendersEditableDomainsAndSNIsBeforeIssue(t *testing.T) {
 	if strings.Contains(body, "Domains are locked after the certificate has been issued.") {
 		t.Fatal("expected pending certificate edit form to allow domain and SNI editing")
 	}
+	if strings.Contains(body, "data-confirm=\"Save changes to this certificate metadata?\"") {
+		t.Fatal("expected certificate edit form not to require confirmation")
+	}
 }
 
 func TestUpdateCertificateAllowsEditingMetadataAndDomainsBeforeIssue(t *testing.T) {
@@ -584,6 +586,9 @@ func TestCertificateDetailRendersLinkedKongTargetsSelection(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("expected detail body to contain %q", want)
 		}
+	}
+	if strings.Contains(body, "data-confirm=\"Save linked Kong target changes for this certificate?\"") {
+		t.Fatal("expected linked target save form not to require confirmation")
 	}
 }
 
@@ -843,6 +848,9 @@ func TestCreateCertificateValidationErrors(t *testing.T) {
 			t.Fatalf("expected validation body to contain %q", want)
 		}
 	}
+	if strings.Contains(body, "data-confirm=\"Create this pending certificate record?\"") {
+		t.Fatal("expected certificate create form not to require confirmation")
+	}
 }
 
 func TestCreateKongTargetAndRenderList(t *testing.T) {
@@ -929,6 +937,9 @@ func TestCreateKongTargetValidationErrors(t *testing.T) {
 			t.Fatalf("expected validation body to contain %q", want)
 		}
 	}
+	if strings.Contains(body, "data-confirm=\"Create this Kong target?\"") {
+		t.Fatal("expected Kong target create form not to require confirmation")
+	}
 }
 
 func TestEditKongTargetDoesNotRenderSecretValue(t *testing.T) {
@@ -954,6 +965,9 @@ func TestEditKongTargetDoesNotRenderSecretValue(t *testing.T) {
 	}
 	if strings.Contains(editBody, "do-not-render") {
 		t.Fatal("expected edit body not to render secret header value")
+	}
+	if strings.Contains(editBody, "data-confirm=\"Save changes to this Kong target?\"") {
+		t.Fatal("expected Kong target edit form not to require confirmation")
 	}
 
 	form := url.Values{

@@ -2,10 +2,6 @@
 <div class="container-fluid app-content">
   <header class="app-page-header">
     <div>
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <span class="app-kicker">{{ .StatusLabel }}</span>
-        <span class="text-secondary small">Execution logs</span>
-      </div>
       <h1 class="app-page-title">{{ .Heading }}</h1>
       <p class="app-page-description">{{ .Description }}</p>
     </div>
@@ -21,11 +17,12 @@
     {{ end }}
   </section>
 
-  <section class="app-panel">
+  <section class="app-panel" data-list-panel>
     <div class="app-panel-header">
       <div>
         <h2 class="app-panel-title">Operation timeline</h2>
-        <p class="app-panel-subtitle">Newest runs appear first. Use filters to isolate failures, job type, or target scope.</p>
+        <p class="app-panel-subtitle">Newest runs appear first. Use filters to isolate failures, job type, or target
+          scope.</p>
       </div>
       <span class="badge text-bg-secondary">{{ len .Jobs }} / {{ .TotalCount }} records</span>
     </div>
@@ -72,47 +69,48 @@
         </thead>
         <tbody>
           {{ if .Jobs }}
-            {{ range .Jobs }}
-            <tr class="app-job-row app-job-row-{{ .Job.Status }}">
-              <td>
-                <div class="app-job-run">
-                  <span class="badge text-bg-secondary">{{ .TypeLabel }}</span>
-                  <span class="app-job-time">{{ .StartedAt }}</span>
-                  <span class="text-secondary small">Job #{{ .Job.ID }}</span>
-                  <span class="text-secondary small">Finished: {{ .FinishedAt }}</span>
-                </div>
-              </td>
-              <td>
-                <div class="app-job-scope">
-                  {{ if .Job.CertificateID }}<a href="/certificates/{{ .Job.CertificateID }}">{{ .CertificateLabel }}</a>{{ else }}<span>{{ .CertificateLabel }}</span>{{ end }}
-                  <span>{{ .KongTargetLabel }}</span>
-                </div>
-              </td>
-              <td>
-                <div class="app-job-outcome">
-                  <span class="app-status-line">
-                    <span class="app-status-dot app-status-dot-{{ statusClass .Job.Status }}"></span>
-                    <span>{{ .StatusLabel }}</span>
-                  </span>
-                  <strong>{{ .Job.Message }}</strong>
-                  {{ if .Job.Log }}<span class="app-job-log-preview">{{ .Job.Log }}</span>{{ end }}
-                </div>
-              </td>
-              <td class="text-end"><a class="btn btn-outline-primary btn-sm" href="/jobs/{{ .Job.ID }}">Open log</a></td>
-            </tr>
-            {{ end }}
+          {{ range .Jobs }}
+          <tr class="app-job-row app-job-row-{{ .Job.Status }}">
+            <td>
+              <div class="app-job-run">
+                <span class="badge text-bg-secondary">{{ .TypeLabel }}</span>
+                <span class="app-job-time">{{ .StartedAt }}</span>
+                <span class="text-secondary small">Job #{{ .Job.ID }}</span>
+                <span class="text-secondary small">Finished: {{ .FinishedAt }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="app-job-scope">
+                {{ if .Job.CertificateID }}<a href="/certificates/{{ .Job.CertificateID }}">{{ .CertificateLabel
+                  }}</a>{{ else }}<span>{{ .CertificateLabel }}</span>{{ end }}
+                <span>{{ .KongTargetLabel }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="app-job-outcome">
+                <span class="app-status-line">
+                  <span class="app-status-dot app-status-dot-{{ statusClass .Job.Status }}"></span>
+                  <span>{{ .StatusLabel }}</span>
+                </span>
+                <strong>{{ .Job.Message }}</strong>
+                {{ if .Job.Log }}<span class="app-job-log-preview">{{ .Job.Log }}</span>{{ end }}
+              </div>
+            </td>
+            <td class="text-end"><a class="btn btn-outline-primary btn-sm" href="/jobs/{{ .Job.ID }}">Open log</a></td>
+          </tr>
+          {{ end }}
           {{ else }}
-            <tr>
-              <td colspan="{{ len .Columns }}">
-                <div class="app-empty-state">
-                  <span class="app-empty-icon"></span>
-                  <div>
-                    <h3>{{ .EmptyTitle }}</h3>
-                    <p>{{ .EmptyText }}</p>
-                  </div>
+          <tr>
+            <td colspan="{{ len .Columns }}">
+              <div class="app-empty-state">
+                <span class="app-empty-icon"></span>
+                <div>
+                  <h3>{{ .EmptyTitle }}</h3>
+                  <p>{{ .EmptyText }}</p>
                 </div>
-              </td>
-            </tr>
+              </div>
+            </td>
+          </tr>
           {{ end }}
         </tbody>
       </table>

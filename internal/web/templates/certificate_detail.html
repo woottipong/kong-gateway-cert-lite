@@ -2,10 +2,6 @@
 <div class="container-fluid app-content app-certificate-detail">
   <header class="app-page-header">
     <div>
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <span class="app-kicker">{{ .StatusLabel }}</span>
-        <span class="text-secondary small">Certificate detail</span>
-      </div>
       <h1 class="app-page-title">{{ .Heading }}</h1>
       <p class="app-page-description">{{ .Description }}</p>
     </div>
@@ -36,7 +32,8 @@
         <h2 class="app-panel-title">Certificate state</h2>
         <p class="app-panel-subtitle">Current lifecycle, expiry window, and next operator action</p>
       </div>
-      <span class="badge text-bg-{{ statusClass .Certificate.Certificate.Status }}">{{ .Certificate.StatusLabel }}</span>
+      <span class="badge text-bg-{{ statusClass .Certificate.Certificate.Status }}">{{ .Certificate.StatusLabel
+        }}</span>
     </div>
     <div class="app-cert-state-body">
       <div class="app-cert-state-primary">
@@ -123,12 +120,14 @@
               <p>Domains, SNI values, email, and renewal settings are stored.</p>
             </div>
           </li>
-          <li class="app-workflow-step {{ if .Certificate.Certificate.CertPath }}is-complete{{ else }}is-current{{ end }}">
+          <li
+            class="app-workflow-step {{ if .Certificate.Certificate.CertPath }}is-complete{{ else }}is-current{{ end }}">
             <div class="app-workflow-marker">2</div>
             <div class="app-workflow-content">
               <div class="app-workflow-heading">
                 <h3>Issue certificate</h3>
-                <span class="badge text-bg-{{ if .Certificate.Certificate.CertPath }}success{{ else }}warning{{ end }}">{{
+                <span
+                  class="badge text-bg-{{ if .Certificate.Certificate.CertPath }}success{{ else }}warning{{ end }}">{{
                   if .Certificate.Certificate.CertPath }}Done{{ else }}Pending{{ end }}</span>
               </div>
               {{ if .Certificate.Certificate.CertPath }}
@@ -136,21 +135,20 @@
               <div class="text-secondary small">Certificate already issued</div>
               {{ else }}
               <p>Create the real certificate files with Let's Encrypt before syncing to Kong.</p>
-              <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/issue"
-                data-confirm="Issue this certificate with ACME DNS-01 now?">
-                <button class="btn btn-primary" type="submit">Issue certificate</button>
-              </form>
+              <div class="text-secondary small">Use the primary action at the top of this page.</div>
               {{ end }}
             </div>
           </li>
-          <li class="app-workflow-step {{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}is-current{{ end }}">
+          <li
+            class="app-workflow-step {{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}is-current{{ end }}">
             <div class="app-workflow-marker">3</div>
             <div class="app-workflow-content">
               <div class="app-workflow-heading">
                 <h3>Sync to Kong</h3>
                 <span
                   class="badge text-bg-{{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}primary{{ else }}secondary{{ end }}">{{
-                  if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}Ready{{ else }}Waiting{{
+                  if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}Ready{{ else
+                  }}Waiting{{
                   end }}</span>
               </div>
               {{ if not .Certificate.Certificate.CertPath }}
@@ -161,10 +159,7 @@
               <button class="btn btn-outline-secondary" type="button" disabled>Sync to Kong</button>
               {{ else }}
               <p>Push the issued certificate to the Kong targets linked below when you are ready.</p>
-              <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/sync"
-                data-confirm="Sync this certificate to linked Kong targets?">
-                <button class="btn btn-primary" type="submit">Sync to Kong</button>
-              </form>
+              <div class="text-secondary small">Use the primary action at the top of this page.</div>
               {{ end }}
             </div>
           </li>

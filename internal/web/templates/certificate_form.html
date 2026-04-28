@@ -2,10 +2,6 @@
 <div class="container-fluid app-content">
   <header class="app-page-header">
     <div>
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <span class="app-kicker">{{ .StatusLabel }}</span>
-        <span class="text-secondary small">Certificates</span>
-      </div>
       <h1 class="app-page-title">{{ .Heading }}</h1>
       <p class="app-page-description">{{ .Description }}</p>
     </div>
@@ -22,7 +18,8 @@
     <div class="app-panel-header">
       <div>
         <h2 class="app-panel-title">Certificate request</h2>
-        <p class="app-panel-subtitle">Create the inventory record first, then issue and sync it from the certificate detail page</p>
+        <p class="app-panel-subtitle">Create the inventory record first, then issue and sync it from the certificate
+          detail page</p>
       </div>
       <span class="badge text-bg-warning">{{ if .IsEdit }}Edit{{ else }}Pending{{ end }}</span>
     </div>
@@ -38,14 +35,14 @@
             <div class="row g-3">
               <div class="col-12 col-lg-6">
                 <label class="form-label" for="name">Certificate name</label>
-                <input class="form-control {{ if fieldError .Errors "name" }}is-invalid{{ end }}" id="name" name="name"
+                <input class="form-control {{ if fieldError .Errors " name" }}is-invalid{{ end }}" id="name" name="name"
                   value="{{ .Form.Name }}" placeholder="Production wildcard">
                 {{ with fieldError .Errors "name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
               </div>
               <div class="col-12 col-lg-6">
                 <label class="form-label" for="email">ACME account email</label>
-                <input class="form-control {{ if fieldError .Errors "email" }}is-invalid{{ end }}" id="email" name="email"
-                  value="{{ .Form.Email }}" placeholder="admin@example.com">
+                <input class="form-control {{ if fieldError .Errors " email" }}is-invalid{{ end }}" id="email"
+                  name="email" value="{{ .Form.Email }}" placeholder="admin@example.com">
                 {{ with fieldError .Errors "email" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
               </div>
             </div>
@@ -59,16 +56,15 @@
             <div class="row g-3">
               <div class="col-12 col-lg-6">
                 <label class="form-label" for="domains">Domains</label>
-                <textarea class="form-control {{ if fieldError .Errors "domains" }}is-invalid{{ end }}" id="domains"
+                <textarea class="form-control {{ if fieldError .Errors " domains" }}is-invalid{{ end }}" id="domains"
                   name="domains" rows="7" placeholder="example.com&#10;*.example.com" {{ if .DomainsAndSNILock
                   }}disabled{{ end }}>{{ .Form.DomainsText }}</textarea>
-                <div class="form-text">{{ if .DomainsAndSNILock }}Domains are locked after the certificate has been issued.{{
-                  else }}One domain per line. The first domain becomes the primary domain.{{ end }}</div>
+                <div class="form-text">{{ if .DomainsAndSNILock }}Domains are locked after the certificate has been issued.{{ else }}One domain per line. The first domain becomes the primary domain.{{ end }}</div>
                 {{ with fieldError .Errors "domains" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
               </div>
               <div class="col-12 col-lg-6">
                 <label class="form-label" for="snis">SNI values</label>
-                <textarea class="form-control {{ if fieldError .Errors "snis" }}is-invalid{{ end }}" id="snis"
+                <textarea class="form-control {{ if fieldError .Errors " snis" }}is-invalid{{ end }}" id="snis"
                   name="snis" rows="7" placeholder="example.com&#10;*.example.com" {{ if .DomainsAndSNILock }}disabled{{
                   end }}>{{ .Form.SNIsText }}</textarea>
                 <div class="form-text">{{ if .DomainsAndSNILock }}SNI values are locked after the certificate has been issued.{{ else }}Leave aligned with domains for normal Kong certificate sync.{{ end }}</div>
@@ -86,8 +82,9 @@
               <div class="col-12 col-lg-6">
                 <label class="form-label" for="renew_before_days">Renew before expiry</label>
                 <div class="input-group">
-                  <input class="form-control {{ if fieldError .Errors "renew_before_days" }}is-invalid{{ end }}"
-                    id="renew_before_days" name="renew_before_days" type="number" min="1" value="{{ .Form.RenewBeforeDays }}">
+                  <input class="form-control {{ if fieldError .Errors " renew_before_days" }}is-invalid{{ end }}"
+                    id="renew_before_days" name="renew_before_days" type="number" min="1"
+                    value="{{ .Form.RenewBeforeDays }}">
                   <span class="input-group-text">days</span>
                   {{ with fieldError .Errors "renew_before_days" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
                 </div>
@@ -99,8 +96,8 @@
                     <span class="form-text">Queue renewal jobs when the certificate reaches the renewal window.</span>
                   </div>
                   <div class="form-check form-switch">
-                    <input class="form-check-input" id="auto_renew" name="auto_renew" type="checkbox" {{ if .Form.AutoRenew
-                      }}checked{{ end }}>
+                    <input class="form-check-input" id="auto_renew" name="auto_renew" type="checkbox" {{ if
+                      .Form.AutoRenew }}checked{{ end }}>
                   </div>
                 </div>
               </div>
@@ -128,7 +125,8 @@
           </div>
           <div class="app-form-note">
             <strong>Before saving</strong>
-            <span>Use one domain per line. SNI values determine how Kong matches incoming TLS traffic to this certificate.</span>
+            <span>Use one domain per line. SNI values determine how Kong matches incoming TLS traffic to this
+              certificate.</span>
           </div>
         </aside>
       </div>
