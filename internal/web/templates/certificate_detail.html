@@ -6,7 +6,12 @@
       <p class="app-page-description">{{ .Description }}</p>
     </div>
     <div class="app-page-actions">
-      <a class="btn btn-outline-primary" href="/certificates/{{ .Certificate.Certificate.ID }}/edit">Edit</a>
+      <a class="btn btn-outline-secondary" href="/certificates">Back</a>
+      <a class="btn btn-outline-secondary" href="/certificates/{{ .Certificate.Certificate.ID }}/edit">Edit</a>
+      <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/delete"
+        data-confirm="Delete this certificate metadata and linked target mappings?">
+        <button class="btn btn-outline-danger" type="submit">Delete</button>
+      </form>
       {{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}
       <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/sync"
         data-confirm="Sync this certificate to linked Kong targets?">
@@ -18,11 +23,6 @@
         <button class="btn btn-primary" type="submit">Issue certificate</button>
       </form>
       {{ end }}
-      <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/delete"
-        data-confirm="Delete this certificate metadata and linked target mappings?">
-        <button class="btn btn-outline-danger" type="submit">Delete</button>
-      </form>
-      <a class="btn btn-outline-secondary" href="/certificates">Back to certificates</a>
     </div>
   </header>
 
@@ -41,8 +41,9 @@
           <span class="app-status-dot app-status-dot-{{ statusClass .Certificate.Certificate.Status }}"></span>
           <span>{{ .Certificate.StatusLabel }}</span>
         </span>
-        <strong>{{ .Certificate.Certificate.PrimaryDomain }}</strong>
-        <span>{{ .Certificate.Type }} certificate</span>
+        <strong class="app-cert-state-domain">{{ .Certificate.Certificate.PrimaryDomain }}</strong>
+        <span class="app-cert-state-type">{{ .Certificate.Type }} certificate · {{ .Certificate.Certificate.Name
+          }}</span>
       </div>
       <dl class="app-cert-state-facts">
         <div>
@@ -90,7 +91,7 @@
         <strong>{{ .Job.Message }}</strong>
         <span class="text-secondary small">Started {{ .StartedAt }} · Finished {{ .FinishedAt }}</span>
       </div>
-      <a class="btn btn-outline-primary btn-sm" href="/jobs/{{ .Job.ID }}">Open log</a>
+      <a class="btn btn-outline-secondary btn-sm" href="/jobs/{{ .Job.ID }}">Open log</a>
     </div>
   </section>
   {{ end }}
@@ -105,7 +106,7 @@
       </div>
 
       <div class="app-cert-operation-block">
-        <div class="app-section-heading">
+        <div class="app-form-section-heading">
           <h3>Issue and sync workflow</h3>
           <p>Current lifecycle and the operator action unlocked at each step.</p>
         </div>
@@ -167,7 +168,7 @@
       </div>
 
       <div class="app-cert-operation-block">
-        <div class="app-section-heading app-section-heading-row">
+        <div class="app-section-heading-row app-form-section-heading">
           <div>
             <h3>Linked Kong targets</h3>
             <p>Choose which Kong Admin API targets receive this certificate.</p>

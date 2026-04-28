@@ -26,10 +26,57 @@
         </span>
       </div>
       <nav class="nav nav-pills gap-1" aria-label="Main navigation">
-        <a class="nav-link {{ if eq .Active "certificates" }}active{{ end }}" href="/certificates">Certificates</a>
-        <a class="nav-link {{ if eq .Active "kong-targets" }}active{{ end }}" href="/kong-targets">Kong Targets</a>
-        <a class="nav-link {{ if eq .Active "jobs" }}active{{ end }}" href="/jobs">Jobs / Logs</a>
-        <a class="nav-link {{ if eq .Active "settings" }}active{{ end }}" href="/settings">Settings</a>
+        <a class="{{ .NavCertificatesClass }}" href="/certificates">
+          <span class="app-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M5 2.5h4.25L12 5.25V13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z" />
+              <path d="M9 2.5v2.75h2.75" />
+              <path d="M5.75 8h4.5" />
+              <path d="M5.75 10.5h4.5" />
+            </svg>
+          </span>
+          <span class="app-nav-label">Certificates</span>
+        </a>
+        <a class="{{ .NavKongTargetsClass }}" href="/kong-targets">
+          <span class="app-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="2.5" y="3" width="11" height="3" rx="1" />
+              <rect x="2.5" y="10" width="11" height="3" rx="1" />
+              <path d="M4.75 6v4" />
+              <path d="M8 6v4" />
+              <path d="M11.25 6v4" />
+            </svg>
+          </span>
+          <span class="app-nav-label">Kong Targets</span>
+        </a>
+        <a class="{{ .NavJobsClass }}" href="/jobs">
+          <span class="app-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M5 3.25h6" />
+              <path d="M8 3.25v2" />
+              <circle cx="8" cy="9" r="4.5" />
+              <path d="M8 7.5v1.75l1.25 1.25" />
+            </svg>
+          </span>
+          <span class="app-nav-label">Jobs / Logs</span>
+        </a>
+        <a class="{{ .NavSettingsClass }}" href="/settings">
+          <span class="app-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M3 4.5h2.25" />
+              <path d="M7.75 4.5H13" />
+              <path d="M3 11.5h5.25" />
+              <path d="M10.75 11.5H13" />
+              <circle cx="6.5" cy="4.5" r="1.25" />
+              <circle cx="9.5" cy="11.5" r="1.25" />
+            </svg>
+          </span>
+          <span class="app-nav-label">Settings</span>
+        </a>
       </nav>
 
     </header>

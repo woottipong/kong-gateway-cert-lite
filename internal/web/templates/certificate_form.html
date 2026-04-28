@@ -5,7 +5,7 @@
       <h1 class="app-page-title">{{ .Heading }}</h1>
       <p class="app-page-description">{{ .Description }}</p>
     </div>
-    <a class="btn btn-outline-secondary" href="/certificates">Cancel</a>
+    <a class="btn btn-outline-secondary" href="/certificates">Back</a>
   </header>
 
   {{ if .Errors }}
@@ -55,20 +55,22 @@
             </div>
             <div class="row g-3">
               <div class="col-12 col-lg-6">
-                <label class="form-label" for="domains">Domains</label>
-                <textarea class="form-control {{ if fieldError .Errors " domains" }}is-invalid{{ end }}" id="domains"
-                  name="domains" rows="7" placeholder="example.com&#10;*.example.com" {{ if .DomainsAndSNILock
-                  }}disabled{{ end }}>{{ .Form.DomainsText }}</textarea>
-                <div class="form-text">{{ if .DomainsAndSNILock }}Domains are locked after the certificate has been issued.{{ else }}One domain per line. The first domain becomes the primary domain.{{ end }}</div>
+                <label class="form-label">Domains</label>
+                <div class="app-tag-input{{ if fieldError .Errors " domains" }} is-invalid{{ end }}"
+                  data-tag-for="domains" {{ if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
                 {{ with fieldError .Errors "domains" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                <textarea class="visually-hidden" id="domains" name="domains" {{ if .DomainsAndSNILock }} disabled{{ end
+                  }}>{{ .Form.DomainsText }}</textarea>
+                <div class="form-text">{{ .DomainsHelpText }}</div>
               </div>
               <div class="col-12 col-lg-6">
-                <label class="form-label" for="snis">SNI values</label>
-                <textarea class="form-control {{ if fieldError .Errors " snis" }}is-invalid{{ end }}" id="snis"
-                  name="snis" rows="7" placeholder="example.com&#10;*.example.com" {{ if .DomainsAndSNILock }}disabled{{
-                  end }}>{{ .Form.SNIsText }}</textarea>
-                <div class="form-text">{{ if .DomainsAndSNILock }}SNI values are locked after the certificate has been issued.{{ else }}Leave aligned with domains for normal Kong certificate sync.{{ end }}</div>
+                <label class="form-label">SNI values</label>
+                <div class="app-tag-input{{ if fieldError .Errors " snis" }} is-invalid{{ end }}" data-tag-for="snis" {{
+                  if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
                 {{ with fieldError .Errors "snis" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                <textarea class="visually-hidden" id="snis" name="snis" {{ if .DomainsAndSNILock }} disabled{{ end
+                  }}>{{ .Form.SNIsText }}</textarea>
+                <div class="form-text">{{ .SNIsHelpText }}</div>
               </div>
             </div>
           </section>
@@ -106,28 +108,34 @@
         </div>
 
         <aside class="app-form-aside" aria-label="Certificate workflow">
-          <div>
-            <span class="app-form-aside-label">Next workflow</span>
-            <ol class="app-form-checklist">
-              <li>
-                <span class="app-form-checklist-marker">1</span>
-                <span>Create pending metadata</span>
-              </li>
-              <li>
-                <span class="app-form-checklist-marker">2</span>
-                <span>Issue the certificate from detail</span>
-              </li>
-              <li>
-                <span class="app-form-checklist-marker">3</span>
+          <span class="app-form-aside-label">{{ if .IsEdit }}Certificate lifecycle{{ else }}Next workflow{{ end
+            }}</span>
+          <ol class="app-form-checklist">
+            <li class="app-form-checklist-item{{ if .IsEdit }} is-done{{ end }}">
+              <span class="app-form-checklist-marker">{{ if .IsEdit }}✓{{ else }}1{{ end }}</span>
+              <span>Create pending metadata</span>
+            </li>
+            <li
+              class="app-form-checklist-item{{ if and .IsEdit .DomainsAndSNILock }} is-done{{ else if and .IsEdit (not .DomainsAndSNILock) }} is-current{{ end }}">
+              <span class="app-form-checklist-marker">{{ if and .IsEdit .DomainsAndSNILock }}✓{{ else }}2{{ end
+                }}</span>
+              <div>
+                <span>Issue the certificate</span>
+                {{ if and .IsEdit (not .DomainsAndSNILock) }}
+                <a class="app-form-checklist-action" href="/certificates/{{ .Form.ID }}">Go to detail →</a>
+                {{ end }}
+              </div>
+            </li>
+            <li class="app-form-checklist-item{{ if and .IsEdit .DomainsAndSNILock }} is-current{{ end }}">
+              <span class="app-form-checklist-marker">3</span>
+              <div>
                 <span>Link and sync to Kong targets</span>
-              </li>
-            </ol>
-          </div>
-          <div class="app-form-note">
-            <strong>Before saving</strong>
-            <span>Use one domain per line. SNI values determine how Kong matches incoming TLS traffic to this
-              certificate.</span>
-          </div>
+                {{ if and .IsEdit .DomainsAndSNILock }}
+                <a class="app-form-checklist-action" href="/certificates/{{ .Form.ID }}">Go to detail →</a>
+                {{ end }}
+              </div>
+            </li>
+          </ol>
         </aside>
       </div>
     </div>

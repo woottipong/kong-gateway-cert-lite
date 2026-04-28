@@ -46,6 +46,11 @@ type PageData struct {
 	Columns       []string
 	EmptyTitle    string
 	EmptyText     string
+	// Pre-computed nav classes — formatter-safe (no string literals in templates)
+	NavCertificatesClass string
+	NavKongTargetsClass  string
+	NavJobsClass         string
+	NavSettingsClass     string
 }
 
 type FlashMessage struct {
@@ -67,6 +72,8 @@ type CertificateFormPage struct {
 	IsEdit            bool
 	Action            string
 	DomainsAndSNILock bool
+	DomainsHelpText   string
+	SNIsHelpText      string
 }
 
 type CertificateDetailPage struct {
@@ -631,7 +638,23 @@ func (h *Handler) renderCertificateForm(c *fiber.Ctx, status int, form usecase.C
 		IsEdit:            isEdit,
 		Action:            action,
 		DomainsAndSNILock: domainsAndSNILock,
+		DomainsHelpText:   domainsHelpText(domainsAndSNILock),
+		SNIsHelpText:      snisHelpText(domainsAndSNILock),
 	})
+}
+
+func domainsHelpText(locked bool) string {
+	if locked {
+		return "Domains are locked after the certificate has been issued."
+	}
+	return "One domain per line. The first domain becomes the primary domain."
+}
+
+func snisHelpText(locked bool) string {
+	if locked {
+		return "SNI values are locked after the certificate has been issued."
+	}
+	return "Leave aligned with domains for normal Kong certificate sync."
 }
 
 func (h *Handler) renderKongTargetForm(c *fiber.Ctx, status int, form usecase.KongTargetFormData, errors map[string]string, isEdit bool) error {
@@ -698,8 +721,19 @@ func (h *Handler) latestCertificateJob(c *fiber.Ctx, certificateID int64) (*usec
 	return nil, nil
 }
 
+func navLinkClass(active, page string) string {
+	if active == page {
+		return "nav-link active"
+	}
+	return "nav-link"
+}
+
 func (h *Handler) pageData(c *fiber.Ctx, data PageData) PageData {
 	data.Flash = h.readFlash(c)
+	data.NavCertificatesClass = navLinkClass(data.Active, "certificates")
+	data.NavKongTargetsClass = navLinkClass(data.Active, "kong-targets")
+	data.NavJobsClass = navLinkClass(data.Active, "jobs")
+	data.NavSettingsClass = navLinkClass(data.Active, "settings")
 	return data
 }
 

@@ -25,29 +25,6 @@
             </div>
             <span class="badge text-bg-secondary">{{ len .Certificates }} / {{ .TotalCount }} records</span>
         </div>
-        <form class="app-filter-bar app-filter-bar-compact" method="get" action="/certificates">
-            <div class="app-filter-field app-filter-search">
-                <label class="form-label" for="certificate_q">Search</label>
-                <input class="form-control" id="certificate_q" name="q" value="{{ .Filters.Query }}"
-                    placeholder="Domain, name, email, or SNI">
-            </div>
-            <div class="app-filter-field">
-                <label class="form-label" for="certificate_status">Status</label>
-                <select class="form-select" id="certificate_status" name="status">
-                    <option value="">All statuses</option>
-                    <option value="pending" {{ if eq .Filters.Status "pending" }}selected{{ end }}>Pending</option>
-                    <option value="active" {{ if eq .Filters.Status "active" }}selected{{ end }}>Active</option>
-                    <option value="warning" {{ if eq .Filters.Status "warning" }}selected{{ end }}>Warning</option>
-                    <option value="expired" {{ if eq .Filters.Status "expired" }}selected{{ end }}>Expired</option>
-                    <option value="failed" {{ if eq .Filters.Status "failed" }}selected{{ end }}>Failed</option>
-                </select>
-            </div>
-            <div class="app-filter-actions">
-                <button class="btn btn-primary" type="submit">Apply</button>
-                {{ if .Filters.HasAny }}<a class="btn btn-outline-secondary" href="/certificates">Reset</a>{{ end }}
-            </div>
-        </form>
-
         <div class="table-responsive">
             <table class="table app-table align-middle mb-0">
                 <thead>
@@ -60,51 +37,41 @@
                 <tbody>
                     {{ if .Certificates }}
                     {{ range .Certificates }}
-                    <tr class="app-certificate-row app-certificate-row-{{ .Certificate.Status }}">
+                    <tr class="app-table-row app-certificate-row app-certificate-row-{{ .Certificate.Status }}"
+                        data-row-href="/certificates/{{ .Certificate.ID }}">
                         <td>
-                            <div class="app-certificate-name">
+                            <div class="app-cell-primary">
                                 <span class="fw-semibold">{{ .Certificate.PrimaryDomain }}</span>
-                                <span class="text-secondary small">{{ .Certificate.Name }}</span>
-                                <span class="text-secondary small">{{ .Type }} certificate · {{ len .Certificate.Domains
-                                    }} domains</span>
+                                <span class="app-cell-meta">{{ .Certificate.Name }} · {{ .Type }} · {{ len
+                                    .Certificate.Domains }} domains</span>
                             </div>
                         </td>
                         <td>
-                            <div class="app-certificate-lifecycle">
+                            <div class="app-cell-primary">
                                 <span class="app-status-line">
                                     <span
                                         class="app-status-dot app-status-dot-{{ statusClass .Certificate.Status }}"></span>
                                     <span>{{ .StatusLabel }}</span>
                                 </span>
-                                <span>Expires: {{ .Expires }}</span>
-                                <span class="text-secondary small">Remaining: {{ .Remaining }}</span>
+                                <span class="app-cell-meta">{{ if .Expires }}Expires {{ .Expires }}{{ if .Remaining }} ·
+                                    {{ .Remaining }}{{ end }}{{ else }}—{{ end }}</span>
                             </div>
                         </td>
                         <td>
-                            <div class="app-certificate-sync">
-                                {{ if gt .LinkedTargetCount 0 }}
-                                <span class="badge text-bg-primary">{{ .LinkedTargetCount }} linked</span>
-                                <span class="text-secondary small">Ready for Kong target sync after issue</span>
-                                {{ else }}
-                                <span class="badge text-bg-secondary">Not linked</span>
-                                <span class="text-secondary small">Link Kong targets from certificate detail</span>
-                                {{ end }}
-                            </div>
+                            {{ if gt .LinkedTargetCount 0 }}
+                            <span class="badge text-bg-primary">{{ .LinkedTargetCount }} linked</span>
+                            {{ else }}
+                            <span class="app-cell-meta">—</span>
+                            {{ end }}
                         </td>
-                        <td class="text-end">
-                            <div class="dropdown app-row-actions">
-                                <a class="btn btn-outline-primary btn-sm"
-                                    href="/certificates/{{ .Certificate.ID }}">Detail</a>
-                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">Actions</button>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    <a class="dropdown-item" href="/certificates/{{ .Certificate.ID }}/edit">Edit</a>
-                                    <div class="dropdown-divider"></div>
-                                    <form method="post" action="/certificates/{{ .Certificate.ID }}/delete"
-                                        data-confirm="Delete this certificate metadata and linked target mappings?">
-                                        <button class="dropdown-item text-danger" type="submit">Delete</button>
-                                    </form>
-                                </div>
+                        <td class="text-end app-row-actions-cell" onclick="event.stopPropagation()">
+                            <div class="app-row-actions">
+                                <a class="app-row-btn" href="/certificates/{{ .Certificate.ID }}">Detail</a>
+                                <a class="app-row-btn" href="/certificates/{{ .Certificate.ID }}/edit">Edit</a>
+                                <form method="post" action="/certificates/{{ .Certificate.ID }}/delete"
+                                    data-confirm="Delete this certificate metadata and linked target mappings?">
+                                    <button class="app-row-btn app-row-btn-danger" type="submit">Delete</button>
+                                </form>
                             </div>
                         </td>
                     </tr>

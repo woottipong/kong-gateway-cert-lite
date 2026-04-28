@@ -172,6 +172,12 @@
   });
 
   document.addEventListener("click", function (event) {
+    const row = event.target.closest("tr[data-row-href]");
+    if (row && !event.target.closest("[onclick], a, button, .dropdown, form")) {
+      window.location.href = row.dataset.rowHref;
+      return;
+    }
+
     const parts = getDialogParts();
     if (!parts || parts.backdrop.hidden) {
       return;
@@ -219,4 +225,90 @@
       first.focus();
     }
   });
+})();
+
+(function () {
+  function initTagInputs() {
+    document.querySelectorAll("[data-tag-for]").forEach(function (container) {
+      var name = container.dataset.tagFor;
+      var textarea = document.getElementById(name);
+      if (!textarea) return;
+      var locked = container.hasAttribute("data-tag-locked");
+
+      var input = document.createElement("input");
+      input.type = "text";
+      input.className = "app-tag-text";
+      input.placeholder = locked ? "" : "type and press Enter";
+      if (locked) input.disabled = true;
+      container.appendChild(input);
+
+      function sync() {
+        textarea.value = Array.from(container.querySelectorAll(".app-tag"))
+          .map(function (t) { return t.dataset.value; })
+          .join("\n");
+      }
+
+      function addTag(value) {
+        value = value.trim();
+        if (!value) return;
+        var exists = Array.from(container.querySelectorAll(".app-tag"))
+          .some(function (t) { return t.dataset.value === value; });
+        if (exists) return;
+
+        var tag = document.createElement("span");
+        tag.className = "app-tag";
+        tag.dataset.value = value;
+        tag.textContent = value;
+
+        if (!locked) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "app-tag-remove";
+          btn.setAttribute("aria-label", "Remove " + value);
+          btn.textContent = "\u00d7";
+          btn.addEventListener("click", function () {
+            tag.remove();
+            sync();
+          });
+          tag.appendChild(btn);
+        }
+
+        container.insertBefore(tag, input);
+        sync();
+      }
+
+      (textarea.value || "").split("\n").forEach(function (v) {
+        if (v.trim()) addTag(v.trim());
+      });
+
+      if (!locked) {
+        input.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === ",") {
+            e.preventDefault();
+            addTag(input.value);
+            input.value = "";
+          }
+          if (e.key === "Backspace" && input.value === "") {
+            var tags = container.querySelectorAll(".app-tag");
+            if (tags.length) {
+              tags[tags.length - 1].remove();
+              sync();
+            }
+          }
+        });
+
+        container.addEventListener("click", function (e) {
+          if (!e.target.closest(".app-tag-remove")) {
+            input.focus();
+          }
+        });
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initTagInputs);
+  } else {
+    initTagInputs();
+  }
 })();
