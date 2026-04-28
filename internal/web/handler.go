@@ -45,6 +45,8 @@ type PageData struct {
 type CertificateListPage struct {
 	PageData
 	Certificates []usecase.CertificateView
+	Filters      ListFilters
+	TotalCount   int
 }
 
 type CertificateFormPage struct {
@@ -63,7 +65,9 @@ type CertificateDetailPage struct {
 
 type KongTargetListPage struct {
 	PageData
-	Targets []usecase.KongTargetView
+	Targets    []usecase.KongTargetView
+	Filters    ListFilters
+	TotalCount int
 }
 
 type KongTargetFormPage struct {
@@ -76,7 +80,9 @@ type KongTargetFormPage struct {
 
 type JobListPage struct {
 	PageData
-	Jobs []usecase.JobView
+	Jobs       []usecase.JobView
+	Filters    ListFilters
+	TotalCount int
 }
 
 type JobDetailPage struct {
@@ -88,6 +94,14 @@ type Metric struct {
 	Label string
 	Value string
 	Tone  string
+}
+
+type ListFilters struct {
+	Query       string
+	Status      string
+	Type        string
+	Environment string
+	HasAny      bool
 }
 
 func NewHandler(logger *slog.Logger, certificates *usecase.CertificateUseCase, acme *usecase.ACMEUseCase, kongSync *usecase.KongSyncUseCase, kongTargets *usecase.KongTargetUseCase, jobs *usecase.JobUseCase) *Handler {
@@ -120,13 +134,16 @@ func (h *Handler) Certificates(c *fiber.Ctx) error {
 		return h.serverError(c, "list certificates", err)
 	}
 
+	totalCount := len(certificates)
+	filters := certificateFiltersFromRequest(c)
+	filteredCertificates := filterCertificates(certificates, filters)
 	active, warning, failed := certificateMetrics(certificates)
 	return h.render(c, fiber.StatusOK, "templates/certificates.html", CertificateListPage{
 		PageData: PageData{
 			Title:         "Certificates",
 			Active:        "certificates",
 			Heading:       "Certificates",
-			Description:   "Track expiry, renewal windows, and Kong sync state from one workspace.",
+			Description:   "Track TLS lifecycle, renewal windows, and Kong sync readiness from one workspace.",
 			PrimaryAction: "Add certificate",
 			StatusLabel:   "Ready",
 			Metrics: []Metric{
@@ -134,11 +151,13 @@ func (h *Handler) Certificates(c *fiber.Ctx) error {
 				{Label: "Expiring soon", Value: strconv.Itoa(warning), Tone: "warning"},
 				{Label: "Needs attention", Value: strconv.Itoa(failed), Tone: "danger"},
 			},
-			Columns:    []string{"Domain", "Type", "Expires", "Status", "Kong targets", "Actions"},
+			Columns:    []string{"Certificate", "Lifecycle", "Kong sync", "Actions"},
 			EmptyTitle: "No certificates",
 			EmptyText:  "Create the first certificate record to begin tracking expiry and Kong sync state.",
 		},
-		Certificates: certificates,
+		Certificates: filteredCertificates,
+		Filters:      filters,
+		TotalCount:   totalCount,
 	})
 }
 
@@ -248,7 +267,7 @@ func (h *Handler) CertificateDetail(c *fiber.Ctx) error {
 			Title:         certificate.Certificate.Name,
 			Active:        "certificates",
 			Heading:       certificate.Certificate.Name,
-			Description:   "Certificate metadata, renewal settings, domains, and SNI values.",
+			Description:   "Review lifecycle state, coverage, renewal policy, and Kong target sync readiness.",
 			PrimaryAction: "Renew now",
 			StatusLabel:   certificate.StatusLabel,
 		},
@@ -339,13 +358,16 @@ func (h *Handler) KongTargets(c *fiber.Ctx) error {
 		return h.serverError(c, "list kong targets", err)
 	}
 
+	totalCount := len(targets)
+	filters := kongTargetFiltersFromRequest(c)
+	filteredTargets := filterKongTargets(targets, filters)
 	online, offline, unknown := kongTargetMetrics(targets)
 	return h.render(c, fiber.StatusOK, "templates/kong_targets.html", KongTargetListPage{
 		PageData: PageData{
 			Title:         "Kong Targets",
 			Active:        "kong-targets",
 			Heading:       "Kong Targets",
-			Description:   "Manage the Kong Admin API endpoints that receive synced certificates.",
+			Description:   "Track Kong Admin API endpoints, health checks, auth mode, and certificate sync destinations.",
 			PrimaryAction: "Add target",
 			StatusLabel:   "Targets",
 			Metrics: []Metric{
@@ -353,11 +375,13 @@ func (h *Handler) KongTargets(c *fiber.Ctx) error {
 				{Label: "Offline", Value: strconv.Itoa(offline), Tone: "danger"},
 				{Label: "Unknown", Value: strconv.Itoa(unknown), Tone: "secondary"},
 			},
-			Columns:    []string{"Name", "Environment", "Admin URL", "Auth", "Status", "Actions"},
+			Columns:    []string{"Target", "Endpoint", "Health", "Actions"},
 			EmptyTitle: "No Kong targets",
 			EmptyText:  "Add a target before syncing certificates to Kong Gateway.",
 		},
-		Targets: targets,
+		Targets:    filteredTargets,
+		Filters:    filters,
+		TotalCount: totalCount,
 	})
 }
 
@@ -466,13 +490,16 @@ func (h *Handler) Jobs(c *fiber.Ctx) error {
 		return h.serverError(c, "list jobs", err)
 	}
 
+	totalCount := len(jobs)
+	filters := jobFiltersFromRequest(c)
+	filteredJobs := filterJobs(jobs, filters)
 	running, succeeded, failed := jobMetrics(jobs)
 	return h.render(c, fiber.StatusOK, "templates/jobs.html", JobListPage{
 		PageData: PageData{
 			Title:         "Jobs / Logs",
 			Active:        "jobs",
 			Heading:       "Jobs / Logs",
-			Description:   "Review issue, renew, sync, and Kong connectivity runs.",
+			Description:   "Audit certificate and Kong operations by time, scope, status, and message.",
 			PrimaryAction: "Refresh",
 			StatusLabel:   "History",
 			Metrics: []Metric{
@@ -480,11 +507,13 @@ func (h *Handler) Jobs(c *fiber.Ctx) error {
 				{Label: "Succeeded", Value: strconv.Itoa(succeeded), Tone: "success"},
 				{Label: "Failed", Value: strconv.Itoa(failed), Tone: "danger"},
 			},
-			Columns:    []string{"Time", "Type", "Certificate", "Target", "Status", "Message", "Actions"},
+			Columns:    []string{"Run", "Scope", "Outcome", "Actions"},
 			EmptyTitle: "No jobs",
 			EmptyText:  "Job history appears after certificate, sync, or Kong target actions run.",
 		},
-		Jobs: jobs,
+		Jobs:       filteredJobs,
+		Filters:    filters,
+		TotalCount: totalCount,
 	})
 }
 
@@ -537,7 +566,7 @@ func (h *Handler) Settings(c *fiber.Ctx) error {
 func (h *Handler) renderCertificateForm(c *fiber.Ctx, status int, form usecase.CertificateFormData, errors map[string]string, isEdit bool, domainsAndSNILock bool) error {
 	title := "Add Certificate"
 	action := "/certificates"
-	description := "Create a pending certificate record before ACME issue support is enabled."
+	description := "Create certificate metadata for ACME issue, renewal, and Kong sync workflows."
 	if isEdit {
 		title = "Edit Certificate"
 		action = "/certificates/" + strconv.FormatInt(form.ID, 10)
@@ -713,6 +742,116 @@ func certificateInputFromForm(form usecase.CertificateFormData) usecase.Certific
 
 func certificateLockedForEdit(certificate domain.Certificate) bool {
 	return strings.TrimSpace(certificate.CertPath) != "" || strings.TrimSpace(certificate.KeyPath) != "" || certificate.ExpiresAt != nil
+}
+
+func certificateFiltersFromRequest(c *fiber.Ctx) ListFilters {
+	filters := ListFilters{
+		Query:  strings.TrimSpace(c.Query("q")),
+		Status: strings.TrimSpace(c.Query("status")),
+	}
+	filters.HasAny = filters.Query != "" || filters.Status != ""
+	return filters
+}
+
+func kongTargetFiltersFromRequest(c *fiber.Ctx) ListFilters {
+	filters := ListFilters{
+		Query:       strings.TrimSpace(c.Query("q")),
+		Status:      strings.TrimSpace(c.Query("status")),
+		Environment: strings.TrimSpace(c.Query("environment")),
+	}
+	filters.HasAny = filters.Query != "" || filters.Status != "" || filters.Environment != ""
+	return filters
+}
+
+func jobFiltersFromRequest(c *fiber.Ctx) ListFilters {
+	filters := ListFilters{
+		Query:  strings.TrimSpace(c.Query("q")),
+		Status: strings.TrimSpace(c.Query("status")),
+		Type:   strings.TrimSpace(c.Query("type")),
+	}
+	filters.HasAny = filters.Query != "" || filters.Status != "" || filters.Type != ""
+	return filters
+}
+
+func filterCertificates(certificates []usecase.CertificateView, filters ListFilters) []usecase.CertificateView {
+	if !filters.HasAny {
+		return certificates
+	}
+
+	filtered := make([]usecase.CertificateView, 0, len(certificates))
+	for _, certificate := range certificates {
+		if filters.Status != "" && !strings.EqualFold(string(certificate.Certificate.Status), filters.Status) {
+			continue
+		}
+		if filters.Query != "" && !containsFold(strings.Join([]string{
+			certificate.Certificate.Name,
+			certificate.Certificate.PrimaryDomain,
+			certificate.Certificate.Email,
+			strings.Join(certificate.Certificate.Domains, " "),
+			strings.Join(certificate.Certificate.SNIs, " "),
+		}, " "), filters.Query) {
+			continue
+		}
+		filtered = append(filtered, certificate)
+	}
+	return filtered
+}
+
+func filterKongTargets(targets []usecase.KongTargetView, filters ListFilters) []usecase.KongTargetView {
+	if !filters.HasAny {
+		return targets
+	}
+
+	filtered := make([]usecase.KongTargetView, 0, len(targets))
+	for _, target := range targets {
+		if filters.Status != "" && !strings.EqualFold(string(target.Target.Status), filters.Status) {
+			continue
+		}
+		if filters.Environment != "" && !strings.EqualFold(target.Target.Environment, filters.Environment) {
+			continue
+		}
+		if filters.Query != "" && !containsFold(strings.Join([]string{
+			target.Target.Name,
+			target.Target.Environment,
+			target.Target.AdminURL,
+			target.Target.AuthHeaderName,
+		}, " "), filters.Query) {
+			continue
+		}
+		filtered = append(filtered, target)
+	}
+	return filtered
+}
+
+func filterJobs(jobs []usecase.JobView, filters ListFilters) []usecase.JobView {
+	if !filters.HasAny {
+		return jobs
+	}
+
+	filtered := make([]usecase.JobView, 0, len(jobs))
+	for _, job := range jobs {
+		if filters.Status != "" && !strings.EqualFold(string(job.Job.Status), filters.Status) {
+			continue
+		}
+		if filters.Type != "" && !strings.EqualFold(string(job.Job.Type), filters.Type) {
+			continue
+		}
+		if filters.Query != "" && !containsFold(strings.Join([]string{
+			job.Job.Message,
+			job.Job.Log,
+			job.TypeLabel,
+			job.CertificateLabel,
+			job.KongTargetLabel,
+		}, " "), filters.Query) {
+			continue
+		}
+		filtered = append(filtered, job)
+	}
+	return filtered
+}
+
+func containsFold(value string, query string) bool {
+	return strings.Contains(strings.ToLower(value), strings.ToLower(strings.TrimSpace(query)))
 }
 
 func parseSelectedTargetIDs(values []string) ([]int64, error) {

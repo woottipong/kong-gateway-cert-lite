@@ -1,5 +1,5 @@
 {{ define "content" }}
-<div class="container-fluid app-content">
+<div class="container-fluid app-content app-certificate-detail">
   <header class="app-page-header">
     <div>
       <div class="d-flex align-items-center gap-2 mb-2">
@@ -9,7 +9,7 @@
       <h1 class="app-page-title">{{ .Heading }}</h1>
       <p class="app-page-description">{{ .Description }}</p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="app-page-actions">
       <a class="btn btn-outline-primary" href="/certificates/{{ .Certificate.Certificate.ID }}/edit">Edit</a>
       {{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}
       <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/sync">
@@ -27,94 +27,178 @@
     </div>
   </header>
 
-  <section class="app-detail-grid">
-    <div class="app-panel">
-      <div class="app-panel-header">
-        <div>
-          <h2 class="app-panel-title">Issue and sync workflow</h2>
-          <p class="app-panel-subtitle">Keep certificate issue and Kong sync as separate operator actions.</p>
-        </div>
+  <section class="app-panel app-cert-state-panel">
+    <div class="app-panel-header">
+      <div>
+        <h2 class="app-panel-title">Certificate state</h2>
+        <p class="app-panel-subtitle">Current lifecycle, expiry window, and next operator action</p>
       </div>
-      <div class="d-grid gap-3">
-        <div class="border rounded p-3">
-          <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
-            <div>
-              <div class="text-secondary small text-uppercase">Step 1</div>
-              <h3 class="h6 mb-1">Issue certificate</h3>
-            </div>
-            <span class="badge text-bg-{{ if .Certificate.Certificate.CertPath }}success{{ else }}warning{{ end }}">{{
-              if .Certificate.Certificate.CertPath }}Done{{ else }}Pending{{ end }}</span>
-          </div>
-          {{ if .Certificate.Certificate.CertPath }}
-          <p class="text-secondary mb-3">Certificate files are available.</p>
-          <div class="text-secondary small">Certificate already issued</div>
-          {{ else }}
-          <p class="text-secondary mb-3">Create the real certificate files with Let's Encrypt before syncing to Kong.
-          </p>
-          <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/issue">
-            <button class="btn btn-primary" type="submit">Issue certificate</button>
-          </form>
-          {{ end }}
-        </div>
-
-        <div class="border rounded p-3">
-          <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
-            <div>
-              <div class="text-secondary small text-uppercase">Step 2</div>
-              <h3 class="h6 mb-1">Sync to Kong</h3>
-            </div>
-            <span
-              class="badge text-bg-{{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}primary{{ else }}secondary{{ end }}">{{
-              if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}Ready{{ else }}Waiting{{
-              end }}</span>
-          </div>
-          {{ if not .Certificate.Certificate.CertPath }}
-          <p class="text-secondary mb-3">Sync becomes available after the certificate has been issued.</p>
-          <button class="btn btn-outline-secondary" type="button" disabled>Sync to Kong</button>
-          {{ else if eq .Certificate.LinkedTargetCount 0 }}
-          <p class="text-secondary mb-3">Link at least one Kong target first, then sync the issued certificate when
-            ready.</p>
-          <button class="btn btn-outline-secondary" type="button" disabled>Sync to Kong</button>
-          {{ else }}
-          <p class="text-secondary mb-3">Push the issued certificate to the Kong targets linked below when you are
-            ready.</p>
-          <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/sync">
-            <button class="btn btn-primary" type="submit">Sync to Kong</button>
-          </form>
-          {{ end }}
-        </div>
-      </div>
+      <span class="badge text-bg-{{ statusClass .Certificate.Certificate.Status }}">{{ .Certificate.StatusLabel }}</span>
     </div>
-
-    <div class="app-panel">
-      <div class="app-panel-header">
-        <div>
-          <h2 class="app-panel-title">Overview</h2>
-          <p class="app-panel-subtitle">Current metadata state</p>
-        </div>
-        <span class="badge text-bg-{{ statusClass .Certificate.Certificate.Status }}">{{ .Certificate.StatusLabel
-          }}</span>
+    <div class="app-cert-state-body">
+      <div class="app-cert-state-primary">
+        <span class="app-status-line">
+          <span class="app-status-dot app-status-dot-{{ statusClass .Certificate.Certificate.Status }}"></span>
+          <span>{{ .Certificate.StatusLabel }}</span>
+        </span>
+        <strong>{{ .Certificate.Certificate.PrimaryDomain }}</strong>
+        <span>{{ .Certificate.Type }} certificate</span>
       </div>
-      <dl class="app-description-list">
-        <div>
-          <dt>Primary domain</dt>
-          <dd>{{ .Certificate.Certificate.PrimaryDomain }}</dd>
-        </div>
-        <div>
-          <dt>Type</dt>
-          <dd>{{ .Certificate.Type }}</dd>
-        </div>
-        <div>
-          <dt>Email</dt>
-          <dd>{{ .Certificate.Certificate.Email }}</dd>
-        </div>
+      <dl class="app-cert-state-facts">
         <div>
           <dt>Expires</dt>
           <dd>{{ .Certificate.Expires }}</dd>
+          <span>{{ .Certificate.Remaining }}</span>
         </div>
         <div>
-          <dt>Remaining</dt>
-          <dd>{{ .Certificate.Remaining }}</dd>
+          <dt>Kong targets</dt>
+          <dd>{{ .Certificate.LinkedTargetCount }}</dd>
+          <span>Linked destinations</span>
+        </div>
+        <div>
+          <dt>Next action</dt>
+          {{ if not .Certificate.Certificate.CertPath }}
+          <dd>Issue certificate</dd>
+          <span>Required before sync</span>
+          {{ else if eq .Certificate.LinkedTargetCount 0 }}
+          <dd>Link targets</dd>
+          <span>Required before sync</span>
+          {{ else }}
+          <dd>Sync to Kong</dd>
+          <span>Ready for linked targets</span>
+          {{ end }}
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="app-cert-detail-grid">
+    <div class="app-panel app-cert-operations-panel">
+      <div class="app-panel-header">
+        <div>
+          <h2 class="app-panel-title">Operations</h2>
+          <p class="app-panel-subtitle">Issue status and Kong sync destinations</p>
+        </div>
+      </div>
+
+      <div class="app-cert-operation-block">
+        <div class="app-section-heading">
+          <h3>Issue and sync workflow</h3>
+          <p>Current lifecycle and the operator action unlocked at each step.</p>
+        </div>
+        <ol class="app-workflow app-workflow-rail app-workflow-compact">
+          <li class="app-workflow-step is-complete">
+            <div class="app-workflow-marker">1</div>
+            <div class="app-workflow-content">
+              <div class="app-workflow-heading">
+                <h3>Metadata</h3>
+                <span class="badge text-bg-success">Done</span>
+              </div>
+              <p>Domains, SNI values, email, and renewal settings are stored.</p>
+            </div>
+          </li>
+          <li class="app-workflow-step {{ if .Certificate.Certificate.CertPath }}is-complete{{ else }}is-current{{ end }}">
+            <div class="app-workflow-marker">2</div>
+            <div class="app-workflow-content">
+              <div class="app-workflow-heading">
+                <h3>Issue certificate</h3>
+                <span class="badge text-bg-{{ if .Certificate.Certificate.CertPath }}success{{ else }}warning{{ end }}">{{
+                  if .Certificate.Certificate.CertPath }}Done{{ else }}Pending{{ end }}</span>
+              </div>
+              {{ if .Certificate.Certificate.CertPath }}
+              <p>Certificate files are available.</p>
+              <div class="text-secondary small">Certificate already issued</div>
+              {{ else }}
+              <p>Create the real certificate files with Let's Encrypt before syncing to Kong.</p>
+              <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/issue">
+                <button class="btn btn-primary" type="submit">Issue certificate</button>
+              </form>
+              {{ end }}
+            </div>
+          </li>
+          <li class="app-workflow-step {{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}is-current{{ end }}">
+            <div class="app-workflow-marker">3</div>
+            <div class="app-workflow-content">
+              <div class="app-workflow-heading">
+                <h3>Sync to Kong</h3>
+                <span
+                  class="badge text-bg-{{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}primary{{ else }}secondary{{ end }}">{{
+                  if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}Ready{{ else }}Waiting{{
+                  end }}</span>
+              </div>
+              {{ if not .Certificate.Certificate.CertPath }}
+              <p>Sync becomes available after the certificate has been issued.</p>
+              <button class="btn btn-outline-secondary" type="button" disabled>Sync to Kong</button>
+              {{ else if eq .Certificate.LinkedTargetCount 0 }}
+              <p>Link at least one Kong target first, then sync the issued certificate when ready.</p>
+              <button class="btn btn-outline-secondary" type="button" disabled>Sync to Kong</button>
+              {{ else }}
+              <p>Push the issued certificate to the Kong targets linked below when you are ready.</p>
+              <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/sync">
+                <button class="btn btn-primary" type="submit">Sync to Kong</button>
+              </form>
+              {{ end }}
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <div class="app-cert-operation-block">
+        <div class="app-section-heading app-section-heading-row">
+          <div>
+            <h3>Linked Kong targets</h3>
+            <p>Choose which Kong Admin API targets receive this certificate.</p>
+          </div>
+          <span class="badge text-bg-primary">{{ .Certificate.LinkedTargetCount }} linked</span>
+        </div>
+
+        {{ if .Certificate.LinkedTargets }}
+        <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/targets">
+          <div class="app-linked-target-list">
+            {{ range .Certificate.LinkedTargets }}
+            <label class="app-linked-target">
+              <input class="form-check-input" type="checkbox" name="kong_target_ids" value="{{ .Target.ID }}" {{ if
+                .IsLinked }}checked{{ end }}>
+              <div class="app-linked-target-main">
+                <div class="app-linked-target-heading">
+                  <span class="fw-semibold">{{ .Target.Name }}</span>
+                  <span class="badge text-bg-{{ .SyncStatusTone }}">{{ .SyncStatusLabel }}</span>
+                </div>
+                <div class="text-secondary small">{{ .Target.Environment }} · {{ .Target.AdminURL }}</div>
+                {{ if .KongCertificateID }}<div class="text-secondary small">Kong certificate id: {{ .KongCertificateID
+                  }}</div>{{ end }}
+                {{ if .LastError }}<div class="text-danger small">{{ .LastError }}</div>{{ end }}
+              </div>
+            </label>
+            {{ end }}
+          </div>
+          <div class="app-linked-target-actions">
+            <button class="btn btn-outline-secondary" type="submit">Save linked targets</button>
+          </div>
+        </form>
+        {{ else }}
+        <div class="app-empty-state app-empty-state-compact">
+          <span class="app-empty-icon"></span>
+          <div>
+            <h3>No Kong targets available</h3>
+            <p>Add a target first, then link it here before syncing this certificate.</p>
+          </div>
+        </div>
+        {{ end }}
+      </div>
+    </div>
+
+    <aside class="app-panel app-cert-config-panel">
+      <div class="app-panel-header">
+        <div>
+          <h2 class="app-panel-title">Configuration</h2>
+          <p class="app-panel-subtitle">Metadata used for issue, renewal, and SNI matching</p>
+        </div>
+      </div>
+      <dl class="app-cert-kv app-cert-kv-single">
+        <div>
+          <dt>ACME email</dt>
+          <dd>{{ .Certificate.Certificate.Email }}</dd>
         </div>
         <div>
           <dt>Auto renew</dt>
@@ -125,65 +209,19 @@
           <dd>{{ .Certificate.Certificate.RenewBeforeDays }} days</dd>
         </div>
       </dl>
-    </div>
-
-    <div class="app-panel">
-      <div class="app-panel-header">
-        <div>
-          <h2 class="app-panel-title">Domains and SNI</h2>
-          <p class="app-panel-subtitle">Values stored for later ACME and Kong workflows</p>
-        </div>
-      </div>
       <div class="app-list-block">
         <h3>Domains</h3>
         <ul>
-          {{ range .Certificate.Certificate.Domains }}<li>{{ . }}</li>{{ end }}
+          {{ range .Certificate.Certificate.Domains }}<li><code>{{ . }}</code></li>{{ end }}
         </ul>
       </div>
       <div class="app-list-block">
         <h3>SNI</h3>
         <ul>
-          {{ range .Certificate.Certificate.SNIs }}<li>{{ . }}</li>{{ end }}
+          {{ range .Certificate.Certificate.SNIs }}<li><code>{{ . }}</code></li>{{ end }}
         </ul>
       </div>
-    </div>
-
-    <div class="app-panel">
-      <div class="app-panel-header">
-        <div>
-          <h2 class="app-panel-title">Linked Kong targets</h2>
-          <p class="app-panel-subtitle">Choose which Kong Admin API targets receive this certificate</p>
-        </div>
-      </div>
-
-      {{ if .Certificate.LinkedTargets }}
-      <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/targets">
-        <div class="d-grid gap-3">
-          {{ range .Certificate.LinkedTargets }}
-          <label class="border rounded p-3 d-flex justify-content-between align-items-start gap-3">
-            <div class="d-flex gap-3 align-items-start">
-              <input class="form-check-input mt-1" type="checkbox" name="kong_target_ids" value="{{ .Target.ID }}" {{ if
-                .IsLinked }}checked{{ end }}>
-              <div>
-                <div class="fw-semibold">{{ .Target.Name }}</div>
-                <div class="text-secondary small">{{ .Target.Environment }} · {{ .Target.AdminURL }}</div>
-                {{ if .KongCertificateID }}<div class="text-secondary small">Kong certificate id: {{ .KongCertificateID
-                  }}</div>{{ end }}
-                {{ if .LastError }}<div class="text-danger small">{{ .LastError }}</div>{{ end }}
-              </div>
-            </div>
-            <span class="badge text-bg-{{ .SyncStatusTone }}">{{ .SyncStatusLabel }}</span>
-          </label>
-          {{ end }}
-        </div>
-        <div class="mt-3">
-          <button class="btn btn-outline-secondary" type="submit">Save linked targets</button>
-        </div>
-      </form>
-      {{ else }}
-      <p class="mb-0 text-secondary">No Kong targets available yet. Add a target first, then link it here.</p>
-      {{ end }}
-    </div>
+    </aside>
   </section>
 </div>
 {{ end }}

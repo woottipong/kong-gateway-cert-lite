@@ -5,17 +5,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ .Title }} - kong-cert-lite</title>
-  <script>
-    (function () {
-      var theme = localStorage.getItem("kong-cert-lite-theme");
-      if (theme === "light") {
-        document.documentElement.dataset.theme = "light";
-      }
-    })();
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/bootstrap/bootstrap.min.css">
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
@@ -40,9 +32,6 @@
           <span class="badge rounded-pill text-bg-light border">MVP</span>
           <span class="text-secondary small d-block mt-2">Local workspace</span>
         </div>
-        <button class="app-theme-toggle" type="button" data-theme-toggle aria-label="Toggle light theme" aria-pressed="false">
-          <span data-theme-toggle-icon>☾</span>
-        </button>
       </div>
     </aside>
 
@@ -51,7 +40,6 @@
     </main>
   </div>
   <script src="/static/bootstrap/bootstrap.bundle.min.js"></script>
-  <script src="/static/js/app.js"></script>
 </body>
 </html>
 {{ end }}

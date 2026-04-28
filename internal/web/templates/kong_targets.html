@@ -24,11 +24,36 @@
   <section class="app-panel">
     <div class="app-panel-header">
       <div>
-        <h2 class="app-panel-title">Kong target inventory</h2>
-        <p class="app-panel-subtitle">Admin API metadata for future connectivity checks and certificate sync</p>
+        <h2 class="app-panel-title">Target inventory</h2>
+        <p class="app-panel-subtitle">Admin API endpoints grouped by environment, health state, and auth mode.</p>
       </div>
-      <span class="badge text-bg-secondary">{{ len .Targets }} records</span>
+      <span class="badge text-bg-secondary">{{ len .Targets }} / {{ .TotalCount }} records</span>
     </div>
+    <form class="app-filter-bar" method="get" action="/kong-targets">
+      <div class="app-filter-field app-filter-search">
+        <label class="form-label" for="target_q">Search</label>
+        <input class="form-control" id="target_q" name="q" value="{{ .Filters.Query }}"
+          placeholder="Name, environment, Admin URL, or header">
+      </div>
+      <div class="app-filter-field">
+        <label class="form-label" for="target_status">Status</label>
+        <select class="form-select" id="target_status" name="status">
+          <option value="">All statuses</option>
+          <option value="online" {{ if eq .Filters.Status "online" }}selected{{ end }}>Online</option>
+          <option value="offline" {{ if eq .Filters.Status "offline" }}selected{{ end }}>Offline</option>
+          <option value="unknown" {{ if eq .Filters.Status "unknown" }}selected{{ end }}>Unknown</option>
+        </select>
+      </div>
+      <div class="app-filter-field">
+        <label class="form-label" for="target_environment">Environment</label>
+        <input class="form-control" id="target_environment" name="environment" value="{{ .Filters.Environment }}"
+          placeholder="production">
+      </div>
+      <div class="app-filter-actions">
+        <button class="btn btn-primary" type="submit">Apply</button>
+        {{ if .Filters.HasAny }}<a class="btn btn-outline-secondary" href="/kong-targets">Reset</a>{{ end }}
+      </div>
+    </form>
 
     <div class="table-responsive">
       <table class="table app-table align-middle mb-0">
@@ -42,28 +67,43 @@
         <tbody>
           {{ if .Targets }}
           {{ range .Targets }}
-          <tr>
+          <tr class="app-target-row app-target-row-{{ .Target.Status }}">
             <td>
-              <div class="fw-semibold">{{ .Target.Name }}</div>
-              <div class="text-secondary small">Last checked: {{ .LastChecked }}</div>
+              <div class="app-target-name">
+                <span class="fw-semibold">{{ .Target.Name }}</span>
+                <span class="badge text-bg-secondary">{{ .Target.Environment }}</span>
+              </div>
+              <div class="text-secondary small">Target #{{ .Target.ID }}</div>
             </td>
-            <td>{{ .Target.Environment }}</td>
-            <td><code>{{ .Target.AdminURL }}</code></td>
             <td>
-              <div>{{ .AuthLabel }}</div>
-              {{ if .Target.AuthHeaderName }}<div class="text-secondary small">{{ .Target.AuthHeaderName }}</div>{{ end
-              }}
+              <div class="app-target-endpoint">
+                <code>{{ .Target.AdminURL }}</code>
+                <span class="text-secondary small">{{ .AuthLabel }}{{ if .Target.AuthHeaderName }} · {{ .Target.AuthHeaderName }}{{ end }}</span>
+              </div>
             </td>
-            <td><span class="badge text-bg-{{ statusClass .Target.Status }}">{{ .StatusLabel }}</span></td>
             <td>
-              <div class="d-flex gap-2">
-                <form method="post" action="/kong-targets/{{ .Target.ID }}/test">
+              <div class="app-target-health">
+                <span class="app-status-line">
+                  <span class="app-status-dot app-status-dot-{{ statusClass .Target.Status }}"></span>
+                  <span>{{ .StatusLabel }}</span>
+                </span>
+                <span class="text-secondary small">Last checked: {{ .LastChecked }}</span>
+              </div>
+            </td>
+            <td class="text-end">
+              <div class="dropdown app-row-actions justify-content-end">
+                <form method="post" action="/kong-targets/{{ .Target.ID }}/test" class="d-inline">
                   <button class="btn btn-outline-primary btn-sm" type="submit">Test</button>
                 </form>
-                <a class="btn btn-outline-secondary btn-sm" href="/kong-targets/{{ .Target.ID }}/edit">Edit</a>
-                <form method="post" action="/kong-targets/{{ .Target.ID }}/delete">
-                  <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
-                </form>
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false">Actions</button>
+                <div class="dropdown-menu dropdown-menu-end">
+                  <a class="dropdown-item" href="/kong-targets/{{ .Target.ID }}/edit">Edit</a>
+                  <div class="dropdown-divider"></div>
+                  <form method="post" action="/kong-targets/{{ .Target.ID }}/delete">
+                    <button class="dropdown-item text-danger" type="submit">Delete</button>
+                  </form>
+                </div>
               </div>
             </td>
           </tr>

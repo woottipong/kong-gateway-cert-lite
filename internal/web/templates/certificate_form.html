@@ -18,62 +18,119 @@
   </div>
   {{ end }}
 
-  <form class="app-panel app-form" method="post" action="{{ .Action }}" novalidate>
+  <form class="app-panel app-form app-certificate-form" method="post" action="{{ .Action }}" novalidate>
     <div class="app-panel-header">
       <div>
-        <h2 class="app-panel-title">Certificate metadata</h2>
-        <p class="app-panel-subtitle">The record is saved as pending until ACME issue support is enabled</p>
+        <h2 class="app-panel-title">Certificate request</h2>
+        <p class="app-panel-subtitle">Create the inventory record first, then issue and sync it from the certificate detail page</p>
       </div>
       <span class="badge text-bg-warning">{{ if .IsEdit }}Edit{{ else }}Pending{{ end }}</span>
     </div>
 
     <div class="app-form-body">
-      <div class="row g-3">
-        <div class="col-12 col-lg-6">
-          <label class="form-label" for="name">Certificate name</label>
-          <input class="form-control {{ if fieldError .Errors " name" }}is-invalid{{ end }}" id="name" name="name"
-            value="{{ .Form.Name }}" placeholder="Production wildcard">
-          {{ with fieldError .Errors "name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+      <div class="app-certificate-form-layout">
+        <div class="app-form-stack">
+          <section class="app-form-section" aria-labelledby="certificate_identity_heading">
+            <div class="app-form-section-heading">
+              <h3 id="certificate_identity_heading">Identity</h3>
+              <p>Name the certificate and set the ACME account email.</p>
+            </div>
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <label class="form-label" for="name">Certificate name</label>
+                <input class="form-control {{ if fieldError .Errors "name" }}is-invalid{{ end }}" id="name" name="name"
+                  value="{{ .Form.Name }}" placeholder="Production wildcard">
+                {{ with fieldError .Errors "name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+              </div>
+              <div class="col-12 col-lg-6">
+                <label class="form-label" for="email">ACME account email</label>
+                <input class="form-control {{ if fieldError .Errors "email" }}is-invalid{{ end }}" id="email" name="email"
+                  value="{{ .Form.Email }}" placeholder="admin@example.com">
+                {{ with fieldError .Errors "email" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+              </div>
+            </div>
+          </section>
+
+          <section class="app-form-section" aria-labelledby="certificate_domains_heading">
+            <div class="app-form-section-heading">
+              <h3 id="certificate_domains_heading">Coverage</h3>
+              <p>Keep domains and SNI aligned unless Kong needs a narrower SNI list.</p>
+            </div>
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <label class="form-label" for="domains">Domains</label>
+                <textarea class="form-control {{ if fieldError .Errors "domains" }}is-invalid{{ end }}" id="domains"
+                  name="domains" rows="7" placeholder="example.com&#10;*.example.com" {{ if .DomainsAndSNILock
+                  }}disabled{{ end }}>{{ .Form.DomainsText }}</textarea>
+                <div class="form-text">{{ if .DomainsAndSNILock }}Domains are locked after the certificate has been issued.{{
+                  else }}One domain per line. The first domain becomes the primary domain.{{ end }}</div>
+                {{ with fieldError .Errors "domains" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+              </div>
+              <div class="col-12 col-lg-6">
+                <label class="form-label" for="snis">SNI values</label>
+                <textarea class="form-control {{ if fieldError .Errors "snis" }}is-invalid{{ end }}" id="snis"
+                  name="snis" rows="7" placeholder="example.com&#10;*.example.com" {{ if .DomainsAndSNILock }}disabled{{
+                  end }}>{{ .Form.SNIsText }}</textarea>
+                <div class="form-text">{{ if .DomainsAndSNILock }}SNI values are locked after the certificate has been issued.{{ else }}Leave aligned with domains for normal Kong certificate sync.{{ end }}</div>
+                {{ with fieldError .Errors "snis" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+              </div>
+            </div>
+          </section>
+
+          <section class="app-form-section" aria-labelledby="certificate_renewal_heading">
+            <div class="app-form-section-heading">
+              <h3 id="certificate_renewal_heading">Renewal policy</h3>
+              <p>Set when this certificate should enter the renewal window.</p>
+            </div>
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <label class="form-label" for="renew_before_days">Renew before expiry</label>
+                <div class="input-group">
+                  <input class="form-control {{ if fieldError .Errors "renew_before_days" }}is-invalid{{ end }}"
+                    id="renew_before_days" name="renew_before_days" type="number" min="1" value="{{ .Form.RenewBeforeDays }}">
+                  <span class="input-group-text">days</span>
+                  {{ with fieldError .Errors "renew_before_days" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                </div>
+              </div>
+              <div class="col-12 col-lg-6 d-flex align-items-end">
+                <div class="app-switch-row">
+                  <div>
+                    <label class="form-label d-block" for="auto_renew">Auto renew</label>
+                    <span class="form-text">Queue renewal jobs when the certificate reaches the renewal window.</span>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" id="auto_renew" name="auto_renew" type="checkbox" {{ if .Form.AutoRenew
+                      }}checked{{ end }}>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
-        <div class="col-12 col-lg-6">
-          <label class="form-label" for="email">Email for Let's Encrypt</label>
-          <input class="form-control {{ if fieldError .Errors " email" }}is-invalid{{ end }}" id="email" name="email"
-            value="{{ .Form.Email }}" placeholder="admin@example.com">
-          {{ with fieldError .Errors "email" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
-        </div>
-        <div class="col-12 col-lg-6">
-          <label class="form-label" for="domains">Domains</label>
-          <textarea class="form-control {{ if fieldError .Errors " domains" }}is-invalid{{ end }}" id="domains"
-            name="domains" rows="5" placeholder="example.com&#10;*.example.com" {{ if .DomainsAndSNILock }}disabled{{
-            end }}>{{ .Form.DomainsText }}</textarea>
-          <div class="form-text">{{ if .DomainsAndSNILock }}Domains are locked after the certificate has been issued.{{
-            else }}One domain per line. Wildcards are allowed for metadata.{{ end }}</div>
-          {{ with fieldError .Errors "domains" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
-        </div>
-        <div class="col-12 col-lg-6">
-          <label class="form-label" for="snis">SNI values</label>
-          <textarea class="form-control {{ if fieldError .Errors " snis" }}is-invalid{{ end }}" id="snis" name="snis"
-            rows="5" placeholder="example.com&#10;*.example.com" {{ if .DomainsAndSNILock }}disabled{{ end
-            }}>{{ .Form.SNIsText }}</textarea>
-          <div class="form-text">{{ if .DomainsAndSNILock }}SNI values are locked after the certificate has been issued.{{ else }}These names will be linked to Kong in a later task.{{ end }}</div>
-          {{ with fieldError .Errors "snis" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
-        </div>
-        <div class="col-12 col-lg-6">
-          <label class="form-label" for="renew_before_days">Renew before expiry</label>
-          <div class="input-group">
-            <input class="form-control {{ if fieldError .Errors " renew_before_days" }}is-invalid{{ end }}"
-              id="renew_before_days" name="renew_before_days" type="number" min="1" value="{{ .Form.RenewBeforeDays }}">
-            <span class="input-group-text">days</span>
-            {{ with fieldError .Errors "renew_before_days" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+
+        <aside class="app-form-aside" aria-label="Certificate workflow">
+          <div>
+            <span class="app-form-aside-label">Next workflow</span>
+            <ol class="app-form-checklist">
+              <li>
+                <span class="app-form-checklist-marker">1</span>
+                <span>Create pending metadata</span>
+              </li>
+              <li>
+                <span class="app-form-checklist-marker">2</span>
+                <span>Issue the certificate from detail</span>
+              </li>
+              <li>
+                <span class="app-form-checklist-marker">3</span>
+                <span>Link and sync to Kong targets</span>
+              </li>
+            </ol>
           </div>
-        </div>
-        <div class="col-12 col-lg-6 d-flex align-items-end">
-          <div class="form-check form-switch">
-            <input class="form-check-input" id="auto_renew" name="auto_renew" type="checkbox" {{ if .Form.AutoRenew
-              }}checked{{ end }}>
-            <label class="form-check-label" for="auto_renew">Enable auto renew</label>
+          <div class="app-form-note">
+            <strong>Before saving</strong>
+            <span>Use one domain per line. SNI values determine how Kong matches incoming TLS traffic to this certificate.</span>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
 

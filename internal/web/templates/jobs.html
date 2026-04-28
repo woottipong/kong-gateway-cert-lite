@@ -24,11 +24,42 @@
   <section class="app-panel">
     <div class="app-panel-header">
       <div>
-        <h2 class="app-panel-title">Latest jobs</h2>
-        <p class="app-panel-subtitle">Newest issue, renew, sync, test, and delete runs appear first</p>
+        <h2 class="app-panel-title">Operation timeline</h2>
+        <p class="app-panel-subtitle">Newest runs appear first. Use filters to isolate failures, job type, or target scope.</p>
       </div>
-      <span class="badge text-bg-secondary">{{ len .Jobs }} records</span>
+      <span class="badge text-bg-secondary">{{ len .Jobs }} / {{ .TotalCount }} records</span>
     </div>
+    <form class="app-filter-bar" method="get" action="/jobs">
+      <div class="app-filter-field app-filter-search">
+        <label class="form-label" for="job_q">Search</label>
+        <input class="form-control" id="job_q" name="q" value="{{ .Filters.Query }}"
+          placeholder="Message, log, certificate, or target">
+      </div>
+      <div class="app-filter-field">
+        <label class="form-label" for="job_type">Type</label>
+        <select class="form-select" id="job_type" name="type">
+          <option value="">All types</option>
+          <option value="issue" {{ if eq .Filters.Type "issue" }}selected{{ end }}>Issue</option>
+          <option value="renew" {{ if eq .Filters.Type "renew" }}selected{{ end }}>Renew</option>
+          <option value="sync" {{ if eq .Filters.Type "sync" }}selected{{ end }}>Sync</option>
+          <option value="test_kong" {{ if eq .Filters.Type "test_kong" }}selected{{ end }}>Test Kong</option>
+          <option value="delete" {{ if eq .Filters.Type "delete" }}selected{{ end }}>Delete</option>
+        </select>
+      </div>
+      <div class="app-filter-field">
+        <label class="form-label" for="job_status">Status</label>
+        <select class="form-select" id="job_status" name="status">
+          <option value="">All statuses</option>
+          <option value="running" {{ if eq .Filters.Status "running" }}selected{{ end }}>Running</option>
+          <option value="success" {{ if eq .Filters.Status "success" }}selected{{ end }}>Success</option>
+          <option value="failed" {{ if eq .Filters.Status "failed" }}selected{{ end }}>Failed</option>
+        </select>
+      </div>
+      <div class="app-filter-actions">
+        <button class="btn btn-primary" type="submit">Apply</button>
+        {{ if .Filters.HasAny }}<a class="btn btn-outline-secondary" href="/jobs">Reset</a>{{ end }}
+      </div>
+    </form>
 
     <div class="table-responsive">
       <table class="table app-table align-middle mb-0">
@@ -42,17 +73,32 @@
         <tbody>
           {{ if .Jobs }}
             {{ range .Jobs }}
-            <tr>
+            <tr class="app-job-row app-job-row-{{ .Job.Status }}">
               <td>
-                <div>{{ .StartedAt }}</div>
-                <div class="text-secondary small">{{ .FinishedAt }}</div>
+                <div class="app-job-run">
+                  <span class="badge text-bg-secondary">{{ .TypeLabel }}</span>
+                  <span class="app-job-time">{{ .StartedAt }}</span>
+                  <span class="text-secondary small">Job #{{ .Job.ID }}</span>
+                  <span class="text-secondary small">Finished: {{ .FinishedAt }}</span>
+                </div>
               </td>
-              <td>{{ .TypeLabel }}</td>
-              <td>{{ if .Job.CertificateID }}<a href="/certificates/{{ .Job.CertificateID }}">{{ .CertificateLabel }}</a>{{ else }}{{ .CertificateLabel }}{{ end }}</td>
-              <td>{{ .KongTargetLabel }}</td>
-              <td><span class="badge text-bg-{{ statusClass .Job.Status }}">{{ .StatusLabel }}</span></td>
-              <td>{{ .Job.Message }}</td>
-              <td><a class="btn btn-outline-secondary btn-sm" href="/jobs/{{ .Job.ID }}">Detail</a></td>
+              <td>
+                <div class="app-job-scope">
+                  {{ if .Job.CertificateID }}<a href="/certificates/{{ .Job.CertificateID }}">{{ .CertificateLabel }}</a>{{ else }}<span>{{ .CertificateLabel }}</span>{{ end }}
+                  <span>{{ .KongTargetLabel }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="app-job-outcome">
+                  <span class="app-status-line">
+                    <span class="app-status-dot app-status-dot-{{ statusClass .Job.Status }}"></span>
+                    <span>{{ .StatusLabel }}</span>
+                  </span>
+                  <strong>{{ .Job.Message }}</strong>
+                  {{ if .Job.Log }}<span class="app-job-log-preview">{{ .Job.Log }}</span>{{ end }}
+                </div>
+              </td>
+              <td class="text-end"><a class="btn btn-outline-primary btn-sm" href="/jobs/{{ .Job.ID }}">Open log</a></td>
             </tr>
             {{ end }}
           {{ else }}

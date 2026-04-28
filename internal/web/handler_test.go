@@ -59,10 +59,8 @@ func TestPlaceholderPagesRenderLayout(t *testing.T) {
 				`<aside class="app-sidebar">`,
 				`class="app-metrics"`,
 				`class="app-panel"`,
-				`data-theme-toggle`,
 				`href="/static/bootstrap/bootstrap.min.css"`,
 				`src="/static/bootstrap/bootstrap.bundle.min.js"`,
-				`src="/static/js/app.js"`,
 				tt.wantTitle,
 				tt.wantActive,
 			} {
@@ -91,7 +89,6 @@ func TestStaticAssets(t *testing.T) {
 		"/static/bootstrap/bootstrap.min.css",
 		"/static/bootstrap/bootstrap.bundle.min.js",
 		"/static/css/app.css",
-		"/static/js/app.js",
 	}
 
 	for _, path := range tests {
@@ -310,7 +307,7 @@ func TestEditCertificateRendersEditableDomainsAndSNIsBeforeIssue(t *testing.T) {
 		"ops@rtt.in.th",
 		"caption.rtt.in.th",
 		"*.caption.rtt.in.th",
-		"Create a pending certificate record before ACME issue support is enabled.",
+		"Create certificate metadata for ACME issue, renewal, and Kong sync workflows.",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("expected edit body to contain %q", want)
@@ -534,8 +531,9 @@ func TestCertificateDetailShowsIssueThenSyncWorkflowForPendingCertificate(t *tes
 	}
 	for _, want := range []string{
 		"Issue and sync workflow",
-		"Step 1",
-		"Step 2",
+		"Metadata",
+		"Issue certificate",
+		"Sync to Kong",
 		"action=\"/certificates/1/issue\"",
 		">Issue certificate<",
 		"Sync becomes available after the certificate has been issued.",
