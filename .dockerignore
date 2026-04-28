@@ -1,0 +1,12 @@
+.git
+.breakdown
+data
+tmp
+*.db
+*.db-shm
+*.db-wal
+Dockerfile*
+compose*.yaml
+compose*.yml
+README.md
+docs

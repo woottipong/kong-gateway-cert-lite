@@ -21,6 +21,20 @@ Manual renew, auto renew, and scheduler work remain in later breakdown tasks.
 
 ## Quick Start
 
+Docker dev with hot reload:
+
+```bash
+docker compose -f compose.dev.yaml up --build
+```
+
+Open:
+
+```text
+http://127.0.0.1:8080/certificates
+```
+
+Native Go:
+
 ```bash
 APP_ADDR=127.0.0.1:8080 APP_DB_PATH=./data/app.db go run ./cmd/kong-cert-lite
 ```
@@ -72,6 +86,46 @@ AUTO_RENEW_CRON
 ```
 
 ## Development
+
+### Docker Dev With Hot Reload
+
+The dev container uses [Air](https://github.com/air-verse/air) to rebuild and restart the Go binary when files under `cmd/` or `internal/` change. Template, CSS, JavaScript, migration, and Go edits are watched.
+
+```bash
+docker compose -f compose.dev.yaml up --build
+```
+
+The container stores runtime state in the local `./data` directory:
+
+```text
+/data/app.db
+/data/certs
+/data/accounts
+```
+
+Use Cloudflare DNS-01 from Docker dev:
+
+```bash
+CF_DNS_API_TOKEN=your_token \
+LETSENCRYPT_ENV=staging \
+docker compose -f compose.dev.yaml up --build
+```
+
+Reset dev runtime containers and build caches:
+
+```bash
+docker compose -f compose.dev.yaml down -v
+```
+
+Local app data remains under `./data`.
+
+Run a one-off test command in the dev image:
+
+```bash
+docker compose -f compose.dev.yaml run --rm app go test ./...
+```
+
+### Native Go
 
 Run tests:
 
@@ -152,7 +206,7 @@ The UI uses the Green Deck design direction:
 
 - Dark-first
 - Spotify green accent `#1DB954`
-- DM Sans and JetBrains Mono from Google Fonts
+- Plus Jakarta Sans and JetBrains Mono from Google Fonts
 - Bootstrap 5 local static assets
 - Small JavaScript only for theme toggle
 

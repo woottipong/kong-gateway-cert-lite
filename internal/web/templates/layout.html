@@ -1,6 +1,6 @@
 {{ define "layout" }}
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -32,6 +32,9 @@
           <span class="badge rounded-pill text-bg-light border">MVP</span>
           <span class="text-secondary small d-block mt-2">Local workspace</span>
         </div>
+        <button class="app-theme-toggle" type="button" data-theme-toggle aria-label="Toggle light and dark theme">
+          <span data-theme-toggle-icon>Dark</span>
+        </button>
       </div>
     </aside>
 
@@ -40,6 +43,7 @@
     </main>
   </div>
   <script src="/static/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="/static/js/theme.js"></script>
 </body>
 </html>
 {{ end }}

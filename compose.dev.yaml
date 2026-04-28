@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      APP_DB_PATH: /data/app.db
+      APP_CERT_DIR: /data/certs
+      APP_ACCOUNT_DIR: /data/accounts
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:-}
+      LETSENCRYPT_ENV: ${LETSENCRYPT_ENV:-staging}
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - ./data:/data
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+
+volumes:
+  go-mod-cache:
+  go-build-cache:

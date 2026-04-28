@@ -46,6 +46,7 @@ Design System:   Green Deck
 Interactivity:   HTMX or small JavaScript only when needed
 Scheduler:       Internal cron scheduler
 Deployment:      Docker / Docker Compose
+Dev Runtime:     Docker Compose + Air hot reload
 Storage:         Local volume /data
 ```
 
@@ -134,6 +135,18 @@ pending     -> secondary
 not_synced  -> secondary
 unknown     -> secondary
 ```
+
+### Development Runtime
+
+Local Docker development uses `compose.dev.yaml` and `Dockerfile.dev`.
+
+- The dev image is based on the Go toolchain image and installs Air for hot reload.
+- Source is bind-mounted at `/app`, so changes to Go code, templates, CSS, JavaScript, and migrations trigger rebuilds.
+- Runtime data is bind-mounted from `./data` to `/data` so local SQLite, certificates, and ACME accounts are shared with native Go runs.
+- Go module and build caches use named volumes to avoid repeated dependency downloads.
+- The app uses the default `:8080` bind address in Docker dev and maps port `8080` to the host.
+
+The development container is intentionally separate from future production hardening. Production Docker Compose concerns remain in the later hardening task.
 
 ### Certificate Use Case
 

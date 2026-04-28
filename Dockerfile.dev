@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+# check=error=true
+
+FROM golang:1.26-bookworm AS dev
+
+ARG AIR_VERSION=v1.65.1
+
+WORKDIR /app
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    GOPROXY=https://proxy.golang.org,direct GOSUMDB=sum.golang.org \
+    go install github.com/air-verse/air@${AIR_VERSION}
+
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+
+EXPOSE 8080
+
+CMD ["air", "-c", ".air.toml"]

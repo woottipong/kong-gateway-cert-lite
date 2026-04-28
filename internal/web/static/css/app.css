@@ -1,8 +1,49 @@
 :root {
-  --gd-primary: #0044f4;
-  --gd-primary-hover: #0030cc;
-  --gd-primary-weak: #eefaff;
-  --gd-accent: #00fabe;
+  color-scheme: dark;
+  --gd-primary: #1DB954;
+  --gd-primary-hover: #41d978;
+  --gd-primary-weak: rgba(29, 185, 84, 0.14);
+  --gd-accent: #1DB954;
+  --gd-secondary: #8b95aa;
+  --gd-neutral: #a5aec0;
+  --gd-bg: #080d16;
+  --gd-sidebar: #050914;
+  --gd-surface: #101722;
+  --gd-surface-2: #151f2d;
+  --gd-surface-3: #202c3d;
+  --gd-text: #f5f7fb;
+  --gd-text-secondary: #aeb8c9;
+  --gd-border: #263244;
+  --gd-warning: #f3ba4d;
+  --gd-error: #ff6174;
+  --gd-success: #1DB954;
+  --gd-nav-text: #aeb8c9;
+  --gd-nav-text-hover: #ffffff;
+  --gd-badge-primary-bg: rgba(29, 185, 84, 0.14);
+  --gd-badge-primary-border: rgba(29, 185, 84, 0.42);
+  --gd-badge-primary-text: #72ee9d;
+  --gd-badge-success-bg: rgba(29, 185, 84, 0.14);
+  --gd-badge-success-border: rgba(29, 185, 84, 0.42);
+  --gd-badge-success-text: #72ee9d;
+  --gd-badge-warning-bg: rgba(243, 186, 77, 0.14);
+  --gd-badge-warning-border: rgba(243, 186, 77, 0.45);
+  --gd-badge-warning-text: #ffd37a;
+  --gd-badge-danger-bg: rgba(255, 97, 116, 0.14);
+  --gd-badge-danger-border: rgba(255, 97, 116, 0.42);
+  --gd-badge-danger-text: #ff9aa7;
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 6px;
+  --gd-radius-lg: 8px;
+  --gd-font: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --gd-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --gd-primary: #1DB954;
+  --gd-primary-hover: #12863b;
+  --gd-primary-weak: #eafbf0;
+  --gd-accent: #1DB954;
   --gd-secondary: #6c7489;
   --gd-neutral: #828a9e;
   --gd-bg: #f9fafb;
@@ -18,9 +59,9 @@
   --gd-success: #007d60;
   --gd-nav-text: #bee2ff;
   --gd-nav-text-hover: #eefaff;
-  --gd-badge-primary-bg: #eefaff;
-  --gd-badge-primary-border: #bee2ff;
-  --gd-badge-primary-text: #0044f4;
+  --gd-badge-primary-bg: #eafbf0;
+  --gd-badge-primary-border: #b9efcb;
+  --gd-badge-primary-text: #12863b;
   --gd-badge-success-bg: #ecfffb;
   --gd-badge-success-border: #b5ffee;
   --gd-badge-success-text: #007d60;
@@ -30,11 +71,6 @@
   --gd-badge-danger-bg: #ffe5e5;
   --gd-badge-danger-border: #ffabab;
   --gd-badge-danger-text: #d60027;
-  --gd-radius-sm: 4px;
-  --gd-radius-md: 6px;
-  --gd-radius-lg: 8px;
-  --gd-font: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --gd-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 html,
@@ -87,7 +123,7 @@ a:hover {
 
 .app-sidebar {
   background: var(--gd-sidebar);
-  border-right: 1px solid var(--gd-border);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex: 0 0 240px;
   flex-direction: column;
@@ -108,7 +144,7 @@ a:hover {
   align-items: center;
   background: var(--gd-accent);
   border-radius: var(--gd-radius-md);
-  color: #000933;
+  color: #050914;
   display: inline-flex;
   font-size: 15px;
   font-weight: 700;
@@ -119,7 +155,7 @@ a:hover {
 }
 
 .app-brand:hover .app-brand-mark {
-  background: #b5ffee;
+  background: var(--gd-primary-hover);
 }
 
 .app-brand-name,
@@ -172,6 +208,28 @@ a:hover {
   justify-content: space-between;
   margin-top: auto;
   padding-top: 16px;
+}
+
+.app-theme-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--gd-radius-sm);
+  color: var(--gd-nav-text-hover);
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  min-height: 32px;
+  padding: 6px 10px;
+  text-transform: uppercase;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.app-theme-toggle:hover,
+.app-theme-toggle:focus {
+  background: rgba(29, 185, 84, 0.16);
+  border-color: rgba(29, 185, 84, 0.52);
+  color: #ffffff;
 }
 
 .app-main {
@@ -253,14 +311,14 @@ a:hover {
 .btn-primary:disabled {
   background: var(--gd-primary);
   border-color: var(--gd-primary);
-  color: #ffffff;
+  color: #050914;
 }
 
 .btn-primary:hover,
 .btn-primary:focus {
   background: var(--gd-primary-hover);
   border-color: var(--gd-primary-hover);
-  color: #ffffff;
+  color: #050914;
 }
 
 .btn-outline-primary {
@@ -887,7 +945,7 @@ a:hover {
 
 .app-empty-icon::before,
 .app-empty-icon::after {
-  background: #ffffff;
+  background: #050914;
   border-radius: 9999px;
   content: "";
   left: 14px;
@@ -1004,7 +1062,7 @@ a:hover {
   align-items: center;
   background: var(--gd-primary);
   border-radius: var(--gd-radius-sm);
-  color: #ffffff;
+  color: #050914;
   display: inline-flex;
   font-size: 12px;
   font-weight: 700;
@@ -1066,7 +1124,7 @@ a:hover {
 .form-select:focus {
   background: var(--gd-surface);
   border-color: var(--gd-primary);
-  box-shadow: 0 0 0 3px rgba(0, 68, 244, 0.16);
+  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.16);
   color: var(--gd-text);
 }
 
@@ -1103,7 +1161,7 @@ a:hover {
 
 .form-check-input:focus {
   border-color: var(--gd-primary);
-  box-shadow: 0 0 0 3px rgba(0, 68, 244, 0.16);
+  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.16);
 }
 
 .form-check-label {
@@ -1208,7 +1266,7 @@ a:hover {
 .app-workflow-step.is-current .app-workflow-marker {
   background: var(--gd-primary);
   border-color: var(--gd-primary);
-  color: #ffffff;
+  color: #050914;
 }
 
 .app-workflow-content {
@@ -1219,7 +1277,7 @@ a:hover {
 
 .app-workflow-step.is-current .app-workflow-content {
   border-color: var(--gd-primary);
-  box-shadow: 0 0 0 3px rgba(0, 68, 244, 0.08);
+  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
 }
 
 .app-workflow-heading {
@@ -1441,6 +1499,47 @@ samp {
   font-family: var(--gd-mono);
 }
 
+@media (max-width: 1199.98px) {
+  .app-content {
+    padding: 22px 24px;
+  }
+
+  .app-metrics,
+  .app-cert-state-facts,
+  .app-workflow-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-cert-state-body,
+  .app-cert-detail-grid,
+  .app-certificate-form-layout,
+  .app-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-cert-state-facts {
+    border-left: 0;
+    border-top: 1px solid var(--gd-border);
+  }
+
+  .app-cert-state-facts div:first-child {
+    border-left: 0;
+  }
+
+  .app-cert-config-panel {
+    position: static;
+  }
+
+  .app-filter-bar {
+    grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(150px, 180px));
+  }
+
+  .app-filter-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
 @media (max-width: 767.98px) {
   .app-shell {
     display: block;
@@ -1448,8 +1547,22 @@ samp {
 
   .app-sidebar {
     border-bottom: 1px solid var(--gd-border);
+    border-right: 0;
     height: auto;
     position: static;
+  }
+
+  .app-brand {
+    margin-bottom: 18px;
+  }
+
+  .app-sidebar .nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-sidebar-footer {
+    margin-top: 18px;
   }
 
   .app-content {
@@ -1473,7 +1586,7 @@ samp {
 
   .app-page-actions .btn,
   .app-page-actions form {
-    flex: 1 1 auto;
+    flex: 1 1 100%;
   }
 
   .app-page-actions form .btn {
@@ -1534,6 +1647,15 @@ samp {
 
   .app-filter-actions .btn {
     flex: 1 1 auto;
+  }
+
+  .app-form-footer {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .app-form-footer .btn {
+    width: 100%;
   }
 
   .app-empty-icon {
