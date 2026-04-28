@@ -3,6 +3,8 @@ package web
 import (
 	"bytes"
 	"embed"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -10,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -19,6 +22,8 @@ import (
 
 //go:embed templates/*.html
 var templateFiles embed.FS
+
+const flashCookieName = "kong_cert_lite_flash"
 
 type Handler struct {
 	logger       *slog.Logger
@@ -36,10 +41,16 @@ type PageData struct {
 	Description   string
 	PrimaryAction string
 	StatusLabel   string
+	Flash         *FlashMessage
 	Metrics       []Metric
 	Columns       []string
 	EmptyTitle    string
 	EmptyText     string
+}
+
+type FlashMessage struct {
+	Tone    string `json:"tone"`
+	Message string `json:"message"`
 }
 
 type CertificateListPage struct {
@@ -61,6 +72,7 @@ type CertificateFormPage struct {
 type CertificateDetailPage struct {
 	PageData
 	Certificate usecase.CertificateView
+	LatestJob   *usecase.JobView
 }
 
 type KongTargetListPage struct {
@@ -139,7 +151,7 @@ func (h *Handler) Certificates(c *fiber.Ctx) error {
 	filteredCertificates := filterCertificates(certificates, filters)
 	active, warning, failed := certificateMetrics(certificates)
 	return h.render(c, fiber.StatusOK, "templates/certificates.html", CertificateListPage{
-		PageData: PageData{
+		PageData: h.pageData(c, PageData{
 			Title:         "Certificates",
 			Active:        "certificates",
 			Heading:       "Certificates",
@@ -154,7 +166,7 @@ func (h *Handler) Certificates(c *fiber.Ctx) error {
 			Columns:    []string{"Certificate", "Lifecycle", "Kong sync", "Actions"},
 			EmptyTitle: "No certificates",
 			EmptyText:  "Create the first certificate record to begin tracking expiry and Kong sync state.",
-		},
+		}),
 		Certificates: filteredCertificates,
 		Filters:      filters,
 		TotalCount:   totalCount,
@@ -188,6 +200,7 @@ func (h *Handler) CreateCertificate(c *fiber.Ctx) error {
 		return h.serverError(c, "create certificate", err)
 	}
 
+	h.setFlash(c, "success", "Certificate metadata created.")
 	return c.Redirect("/certificates/"+strconv.FormatInt(id, 10), fiber.StatusSeeOther)
 }
 
@@ -245,6 +258,7 @@ func (h *Handler) UpdateCertificate(c *fiber.Ctx) error {
 		return h.serverError(c, "update certificate", err)
 	}
 
+	h.setFlash(c, "success", "Certificate metadata updated.")
 	return c.Redirect("/certificates/"+strconv.FormatInt(id, 10), fiber.StatusSeeOther)
 }
 
@@ -261,17 +275,22 @@ func (h *Handler) CertificateDetail(c *fiber.Ctx) error {
 		}
 		return h.serverError(c, "get certificate", err)
 	}
+	latestJob, err := h.latestCertificateJob(c, id)
+	if err != nil {
+		return h.serverError(c, "get latest certificate job", err)
+	}
 
 	return h.render(c, fiber.StatusOK, "templates/certificate_detail.html", CertificateDetailPage{
-		PageData: PageData{
+		PageData: h.pageData(c, PageData{
 			Title:         certificate.Certificate.Name,
 			Active:        "certificates",
 			Heading:       certificate.Certificate.Name,
 			Description:   "Review lifecycle state, coverage, renewal policy, and Kong target sync readiness.",
 			PrimaryAction: "Renew now",
 			StatusLabel:   certificate.StatusLabel,
-		},
+		}),
 		Certificate: certificate,
+		LatestJob:   latestJob,
 	})
 }
 
@@ -288,6 +307,7 @@ func (h *Handler) DeleteCertificate(c *fiber.Ctx) error {
 		return h.serverError(c, "delete certificate", err)
 	}
 
+	h.setFlash(c, "success", "Certificate deleted.")
 	return c.Redirect("/certificates", fiber.StatusSeeOther)
 }
 
@@ -304,6 +324,13 @@ func (h *Handler) SyncCertificate(c *fiber.Ctx) error {
 		return h.serverError(c, "sync certificate", err)
 	}
 
+	flashTone := "success"
+	flashMessage := "Kong sync completed."
+	if certificate, err := h.certificates.Get(c.UserContext(), id); err == nil && certificateHasFailedSync(certificate) {
+		flashTone = "danger"
+		flashMessage = "Kong sync finished with failures. Review linked target status below."
+	}
+	h.setFlash(c, flashTone, flashMessage)
 	return c.Redirect("/certificates/"+strconv.FormatInt(id, 10), fiber.StatusSeeOther)
 }
 
@@ -320,6 +347,13 @@ func (h *Handler) IssueCertificate(c *fiber.Ctx) error {
 		return h.serverError(c, "issue certificate", err)
 	}
 
+	flashTone := "success"
+	flashMessage := "Certificate issued successfully."
+	if certificate, err := h.certificates.Get(c.UserContext(), id); err == nil && certificate.Certificate.Status == domain.CertificateStatusFailed {
+		flashTone = "danger"
+		flashMessage = "Certificate issue failed. Review certificate state and job logs."
+	}
+	h.setFlash(c, flashTone, flashMessage)
 	return c.Redirect("/certificates/"+strconv.FormatInt(id, 10), fiber.StatusSeeOther)
 }
 
@@ -349,6 +383,7 @@ func (h *Handler) UpdateCertificateTargets(c *fiber.Ctx) error {
 		return h.serverError(c, "update certificate targets", err)
 	}
 
+	h.setFlash(c, "success", "Linked Kong targets updated.")
 	return c.Redirect("/certificates/"+strconv.FormatInt(id, 10), fiber.StatusSeeOther)
 }
 
@@ -363,7 +398,7 @@ func (h *Handler) KongTargets(c *fiber.Ctx) error {
 	filteredTargets := filterKongTargets(targets, filters)
 	online, offline, unknown := kongTargetMetrics(targets)
 	return h.render(c, fiber.StatusOK, "templates/kong_targets.html", KongTargetListPage{
-		PageData: PageData{
+		PageData: h.pageData(c, PageData{
 			Title:         "Kong Targets",
 			Active:        "kong-targets",
 			Heading:       "Kong Targets",
@@ -378,7 +413,7 @@ func (h *Handler) KongTargets(c *fiber.Ctx) error {
 			Columns:    []string{"Target", "Endpoint", "Health", "Actions"},
 			EmptyTitle: "No Kong targets",
 			EmptyText:  "Add a target before syncing certificates to Kong Gateway.",
-		},
+		}),
 		Targets:    filteredTargets,
 		Filters:    filters,
 		TotalCount: totalCount,
@@ -402,6 +437,7 @@ func (h *Handler) CreateKongTarget(c *fiber.Ctx) error {
 		return h.serverError(c, "create kong target", err)
 	}
 
+	h.setFlash(c, "success", "Kong target created.")
 	return c.Redirect("/kong-targets", fiber.StatusSeeOther)
 }
 
@@ -449,6 +485,7 @@ func (h *Handler) UpdateKongTarget(c *fiber.Ctx) error {
 		return h.serverError(c, "update kong target", err)
 	}
 
+	h.setFlash(c, "success", "Kong target updated.")
 	return c.Redirect("/kong-targets", fiber.StatusSeeOther)
 }
 
@@ -465,6 +502,7 @@ func (h *Handler) DeleteKongTarget(c *fiber.Ctx) error {
 		return h.serverError(c, "delete kong target", err)
 	}
 
+	h.setFlash(c, "success", "Kong target deleted.")
 	return c.Redirect("/kong-targets", fiber.StatusSeeOther)
 }
 
@@ -481,6 +519,13 @@ func (h *Handler) TestKongTarget(c *fiber.Ctx) error {
 		return h.serverError(c, "test kong target", err)
 	}
 
+	flashTone := "success"
+	flashMessage := "Kong connectivity test passed."
+	if target, err := h.kongTargets.Get(c.UserContext(), id); err == nil && target.Target.Status == domain.KongTargetStatusOffline {
+		flashTone = "danger"
+		flashMessage = "Kong connectivity test failed. Review target health and job logs."
+	}
+	h.setFlash(c, flashTone, flashMessage)
 	return c.Redirect("/kong-targets", fiber.StatusSeeOther)
 }
 
@@ -495,7 +540,7 @@ func (h *Handler) Jobs(c *fiber.Ctx) error {
 	filteredJobs := filterJobs(jobs, filters)
 	running, succeeded, failed := jobMetrics(jobs)
 	return h.render(c, fiber.StatusOK, "templates/jobs.html", JobListPage{
-		PageData: PageData{
+		PageData: h.pageData(c, PageData{
 			Title:         "Jobs / Logs",
 			Active:        "jobs",
 			Heading:       "Jobs / Logs",
@@ -510,7 +555,7 @@ func (h *Handler) Jobs(c *fiber.Ctx) error {
 			Columns:    []string{"Run", "Scope", "Outcome", "Actions"},
 			EmptyTitle: "No jobs",
 			EmptyText:  "Job history appears after certificate, sync, or Kong target actions run.",
-		},
+		}),
 		Jobs:       filteredJobs,
 		Filters:    filters,
 		TotalCount: totalCount,
@@ -532,20 +577,20 @@ func (h *Handler) JobDetail(c *fiber.Ctx) error {
 	}
 
 	return h.render(c, fiber.StatusOK, "templates/job_detail.html", JobDetailPage{
-		PageData: PageData{
+		PageData: h.pageData(c, PageData{
 			Title:         "Job #" + strconv.FormatInt(job.Job.ID, 10),
 			Active:        "jobs",
 			Heading:       "Job #" + strconv.FormatInt(job.Job.ID, 10),
 			Description:   "Execution timing, status, message, and detailed log output.",
 			PrimaryAction: "Back to jobs",
 			StatusLabel:   job.StatusLabel,
-		},
+		}),
 		Job: job,
 	})
 }
 
 func (h *Handler) Settings(c *fiber.Ctx) error {
-	return h.render(c, fiber.StatusOK, "templates/placeholder.html", PageData{
+	return h.render(c, fiber.StatusOK, "templates/placeholder.html", h.pageData(c, PageData{
 		Title:         "Settings",
 		Active:        "settings",
 		Heading:       "Settings",
@@ -560,7 +605,7 @@ func (h *Handler) Settings(c *fiber.Ctx) error {
 		Columns:    []string{"Setting", "Value", "Source", "Status"},
 		EmptyTitle: "Settings overview",
 		EmptyText:  "Runtime settings will be surfaced as configuration support is expanded.",
-	})
+	}))
 }
 
 func (h *Handler) renderCertificateForm(c *fiber.Ctx, status int, form usecase.CertificateFormData, errors map[string]string, isEdit bool, domainsAndSNILock bool) error {
@@ -573,14 +618,14 @@ func (h *Handler) renderCertificateForm(c *fiber.Ctx, status int, form usecase.C
 	}
 
 	return h.render(c, status, "templates/certificate_form.html", CertificateFormPage{
-		PageData: PageData{
+		PageData: h.pageData(c, PageData{
 			Title:         title,
 			Active:        "certificates",
 			Heading:       title,
 			Description:   description,
 			PrimaryAction: "Issue certificate",
 			StatusLabel:   "Metadata",
-		},
+		}),
 		Form:              form,
 		Errors:            errors,
 		IsEdit:            isEdit,
@@ -598,14 +643,14 @@ func (h *Handler) renderKongTargetForm(c *fiber.Ctx, status int, form usecase.Ko
 	}
 
 	return h.render(c, status, "templates/kong_target_form.html", KongTargetFormPage{
-		PageData: PageData{
+		PageData: h.pageData(c, PageData{
 			Title:         title,
 			Active:        "kong-targets",
 			Heading:       title,
 			Description:   "Configure Kong Admin API metadata. Use the target list to run connectivity checks.",
 			PrimaryAction: "Save target",
 			StatusLabel:   "Target",
-		},
+		}),
 		Form:   form,
 		Errors: errors,
 		IsEdit: isEdit,
@@ -639,11 +684,99 @@ func (h *Handler) serverError(c *fiber.Ctx, message string, err error) error {
 	return fiber.NewError(fiber.StatusInternalServerError, "internal server error")
 }
 
+func (h *Handler) latestCertificateJob(c *fiber.Ctx, certificateID int64) (*usecase.JobView, error) {
+	jobs, err := h.jobs.List(c.UserContext())
+	if err != nil {
+		return nil, err
+	}
+	for _, job := range jobs {
+		if job.Job.CertificateID != nil && *job.Job.CertificateID == certificateID {
+			latest := job
+			return &latest, nil
+		}
+	}
+	return nil, nil
+}
+
+func (h *Handler) pageData(c *fiber.Ctx, data PageData) PageData {
+	data.Flash = h.readFlash(c)
+	return data
+}
+
+func (h *Handler) setFlash(c *fiber.Ctx, tone string, message string) {
+	flash := FlashMessage{
+		Tone:    strings.TrimSpace(tone),
+		Message: strings.TrimSpace(message),
+	}
+	if flash.Tone == "" || flash.Message == "" {
+		return
+	}
+
+	payload, err := json.Marshal(flash)
+	if err != nil {
+		h.logger.Error("marshal flash", "error", err)
+		return
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     flashCookieName,
+		Value:    base64.RawURLEncoding.EncodeToString(payload),
+		Path:     "/",
+		HTTPOnly: true,
+		SameSite: "Lax",
+	})
+}
+
+func (h *Handler) readFlash(c *fiber.Ctx) *FlashMessage {
+	encoded := strings.TrimSpace(c.Cookies(flashCookieName))
+	if encoded == "" {
+		return nil
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     flashCookieName,
+		Value:    "",
+		Path:     "/",
+		HTTPOnly: true,
+		SameSite: "Lax",
+		Expires:  time.Unix(0, 0).UTC(),
+		MaxAge:   -1,
+	})
+
+	payload, err := base64.RawURLEncoding.DecodeString(encoded)
+	if err != nil {
+		h.logger.Error("decode flash", "error", err)
+		return nil
+	}
+
+	var flash FlashMessage
+	if err := json.Unmarshal(payload, &flash); err != nil {
+		h.logger.Error("parse flash", "error", err)
+		return nil
+	}
+	flash.Tone = flashToneClass(flash.Tone)
+	flash.Message = strings.TrimSpace(flash.Message)
+	if flash.Message == "" {
+		return nil
+	}
+
+	return &flash
+}
+
 func fieldError(errors map[string]string, field string) string {
 	if errors == nil {
 		return ""
 	}
 	return errors[field]
+}
+
+func flashToneClass(tone string) string {
+	switch strings.ToLower(strings.TrimSpace(tone)) {
+	case "success", "warning", "danger":
+		return strings.ToLower(strings.TrimSpace(tone))
+	default:
+		return "secondary"
+	}
 }
 
 func statusClass(status any) string {
@@ -742,6 +875,15 @@ func certificateInputFromForm(form usecase.CertificateFormData) usecase.Certific
 
 func certificateLockedForEdit(certificate domain.Certificate) bool {
 	return strings.TrimSpace(certificate.CertPath) != "" || strings.TrimSpace(certificate.KeyPath) != "" || certificate.ExpiresAt != nil
+}
+
+func certificateHasFailedSync(certificate usecase.CertificateView) bool {
+	for _, target := range certificate.LinkedTargets {
+		if target.IsLinked && target.SyncStatusTone == "danger" {
+			return true
+		}
+	}
+	return false
 }
 
 func certificateFiltersFromRequest(c *fiber.Ctx) ListFilters {

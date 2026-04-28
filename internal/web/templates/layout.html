@@ -39,11 +39,34 @@
     </aside>
 
     <main class="app-main">
+      {{ with .Flash }}
+      <div class="container-fluid app-content app-flash-wrap">
+        <div class="app-flash app-flash-{{ .Tone }}" role="status">
+          <span class="app-flash-dot"></span>
+          <span>{{ .Message }}</span>
+        </div>
+      </div>
+      {{ end }}
       {{ template "content" . }}
     </main>
   </div>
+  <div class="app-confirm-backdrop" data-confirm-backdrop hidden>
+    <section class="app-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title" aria-describedby="app-confirm-message" tabindex="-1">
+      <div class="app-confirm-icon" data-confirm-icon aria-hidden="true">!</div>
+      <div class="app-confirm-copy">
+        <p class="app-confirm-kicker" data-confirm-kicker>Confirm action</p>
+        <h2 class="app-confirm-title" id="app-confirm-title" data-confirm-title>Confirm action</h2>
+        <p class="app-confirm-message" id="app-confirm-message" data-confirm-message></p>
+      </div>
+      <div class="app-confirm-actions">
+        <button class="btn btn-outline-secondary" type="button" data-confirm-cancel>Cancel</button>
+        <button class="btn btn-primary" type="button" data-confirm-accept>Continue</button>
+      </div>
+    </section>
+  </div>
   <script src="/static/bootstrap/bootstrap.bundle.min.js"></script>
   <script src="/static/js/theme.js"></script>
+  <script src="/static/js/actions.js"></script>
 </body>
 </html>
 {{ end }}

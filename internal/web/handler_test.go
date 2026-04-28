@@ -89,6 +89,8 @@ func TestStaticAssets(t *testing.T) {
 		"/static/bootstrap/bootstrap.min.css",
 		"/static/bootstrap/bootstrap.bundle.min.js",
 		"/static/css/app.css",
+		"/static/js/theme.js",
+		"/static/js/actions.js",
 	}
 
 	for _, path := range tests {
@@ -145,6 +147,15 @@ func TestCreateCertificateAndRenderDetail(t *testing.T) {
 			t.Fatalf("expected detail body to contain %q", want)
 		}
 	}
+	for _, want := range []string{
+		"data-confirm-backdrop",
+		"app-confirm-dialog",
+		"data-confirm-accept",
+	} {
+		if !strings.Contains(detailBody, want) {
+			t.Fatalf("expected detail layout to contain %q", want)
+		}
+	}
 
 	listResp, listBody := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/certificates", nil))
 	if listResp.StatusCode != fiber.StatusOK {
@@ -158,6 +169,56 @@ func TestCreateCertificateAndRenderDetail(t *testing.T) {
 		if !strings.Contains(listBody, want) {
 			t.Fatalf("expected list body to contain %q", want)
 		}
+	}
+}
+
+func TestFlashMessageRendersOnceAfterRedirect(t *testing.T) {
+	_, app := testServer(t)
+	form := url.Values{
+		"name":              {"Production wildcard"},
+		"email":             {"admin@example.com"},
+		"domains":           {"example.com"},
+		"snis":              {"example.com"},
+		"auto_renew":        {"on"},
+		"renew_before_days": {"30"},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/certificates", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, _ := doRequest(t, app, req)
+	if resp.StatusCode != fiber.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", resp.StatusCode)
+	}
+
+	flashCookie := responseCookie(resp, flashCookieName)
+	if flashCookie == nil || strings.TrimSpace(flashCookie.Value) == "" {
+		t.Fatal("expected create response to set flash cookie")
+	}
+
+	detailReq := httptest.NewRequest(http.MethodGet, "/certificates/1", nil)
+	detailReq.AddCookie(flashCookie)
+	detailResp, detailBody := doRequest(t, app, detailReq)
+	if detailResp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected detail status 200, got %d", detailResp.StatusCode)
+	}
+	if !strings.Contains(detailBody, "Certificate metadata created.") {
+		t.Fatal("expected detail page to render flash message")
+	}
+	if !strings.Contains(detailBody, "app-flash app-flash-success") {
+		t.Fatal("expected success flash styling")
+	}
+
+	clearCookie := responseCookie(detailResp, flashCookieName)
+	if clearCookie == nil || clearCookie.Value != "" {
+		t.Fatalf("expected rendered flash to clear flash cookie, got cookies %#v and set-cookie %q", detailResp.Cookies(), detailResp.Header.Values("Set-Cookie"))
+	}
+
+	nextResp, nextBody := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/certificates/1", nil))
+	if nextResp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected detail status 200, got %d", nextResp.StatusCode)
+	}
+	if strings.Contains(nextBody, "Certificate metadata created.") {
+		t.Fatal("expected flash message to render only once")
 	}
 }
 
@@ -252,6 +313,19 @@ func TestIssueCertificateWithoutCloudflareTokenMarksCertificateFailedAndCreatesF
 	}
 	if location := resp.Header.Get("Location"); location != "/certificates/1" {
 		t.Fatalf("expected detail redirect, got %q", location)
+	}
+	flashCookie := responseCookie(resp, flashCookieName)
+	if flashCookie == nil {
+		t.Fatal("expected issue response to set flash cookie")
+	}
+	detailReq := httptest.NewRequest(http.MethodGet, "/certificates/1", nil)
+	detailReq.AddCookie(flashCookie)
+	_, detailBody := doRequest(t, app, detailReq)
+	if !strings.Contains(detailBody, "Certificate issue failed.") {
+		t.Fatal("expected issue failure flash message")
+	}
+	if !strings.Contains(detailBody, "app-flash app-flash-danger") {
+		t.Fatal("expected issue failure flash to use danger styling")
 	}
 
 	var status string
@@ -513,6 +587,73 @@ func TestCertificateDetailRendersLinkedKongTargetsSelection(t *testing.T) {
 	}
 }
 
+func TestCertificateDetailRendersLatestJobAndActionSafety(t *testing.T) {
+	database, app := testServer(t)
+	_, err := database.Exec(`
+		INSERT INTO certificates (
+			name, primary_domain, domains_json, email, snis_json, status
+		) VALUES (?, ?, ?, ?, ?, ?)
+	`, "Production wildcard", "example.com", `["example.com"]`, "admin@example.com", `["example.com"]`, "failed")
+	if err != nil {
+		t.Fatalf("insert certificate: %v", err)
+	}
+	_, err = database.Exec(`
+		INSERT INTO jobs (certificate_id, type, status, message, log, started_at, finished_at)
+		VALUES
+			(?, 'issue', 'success', 'Older issue succeeded', 'old log', '2026-04-25 10:00:00', '2026-04-25 10:01:00'),
+			(?, 'issue', 'failed', 'Cloudflare token missing', 'failed issue log', '2026-04-26 10:00:00', '2026-04-26 10:01:00')
+	`, 1, 1)
+	if err != nil {
+		t.Fatalf("insert jobs: %v", err)
+	}
+
+	resp, body := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/certificates/1", nil))
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected detail status 200, got %d", resp.StatusCode)
+	}
+	for _, want := range []string{
+		"Latest job",
+		"Most recent operation recorded for this certificate",
+		"Cloudflare token missing",
+		"href=\"/jobs/2\"",
+		"data-confirm=\"Issue this certificate with ACME DNS-01 now?\"",
+		"data-confirm=\"Delete this certificate metadata and linked target mappings?\"",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected detail body to contain %q", want)
+		}
+	}
+	if strings.Contains(body, "Older issue succeeded") {
+		t.Fatal("expected only latest certificate job to render")
+	}
+}
+
+func TestCertificateDetailEmptyKongTargetsLinksToAddTarget(t *testing.T) {
+	database, app := testServer(t)
+	_, err := database.Exec(`
+		INSERT INTO certificates (
+			name, primary_domain, domains_json, email, snis_json, status
+		) VALUES (?, ?, ?, ?, ?, ?)
+	`, "Production wildcard", "example.com", `["example.com"]`, "admin@example.com", `["example.com"]`, "active")
+	if err != nil {
+		t.Fatalf("insert certificate: %v", err)
+	}
+
+	resp, body := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/certificates/1", nil))
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected detail status 200, got %d", resp.StatusCode)
+	}
+	for _, want := range []string{
+		"No Kong targets available",
+		"href=\"/kong-targets/new\"",
+		"Add Kong target",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected detail body to contain %q", want)
+		}
+	}
+}
+
 func TestCertificateDetailShowsIssueThenSyncWorkflowForPendingCertificate(t *testing.T) {
 	database, app := testServer(t)
 	_, err := database.Exec(`
@@ -745,7 +886,9 @@ func TestCreateKongTargetAndRenderList(t *testing.T) {
 		"Custom header",
 		"Kong-Admin-Token",
 		"Unknown",
+		"data-confirm=\"Run a connectivity test against this Kong Admin API target?\"",
 		"action=\"/kong-targets/1/delete\"",
+		"data-confirm=\"Delete this Kong target and remove its certificate links?\"",
 		">Delete<",
 	} {
 		if !strings.Contains(listBody, want) {
@@ -1627,4 +1770,13 @@ func doRequest(t *testing.T, app *fiber.App, req *http.Request) (*http.Response,
 	}
 
 	return resp, string(body)
+}
+
+func responseCookie(resp *http.Response, name string) *http.Cookie {
+	for _, cookie := range resp.Cookies() {
+		if cookie.Name == name {
+			return cookie
+		}
+	}
+	return nil
 }

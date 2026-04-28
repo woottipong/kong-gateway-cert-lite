@@ -12,15 +12,18 @@
     <div class="app-page-actions">
       <a class="btn btn-outline-primary" href="/certificates/{{ .Certificate.Certificate.ID }}/edit">Edit</a>
       {{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}
-      <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/sync">
+      <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/sync"
+        data-confirm="Sync this certificate to linked Kong targets?">
         <button class="btn btn-primary" type="submit">Sync to Kong</button>
       </form>
       {{ else if not .Certificate.Certificate.CertPath }}
-      <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/issue">
+      <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/issue"
+        data-confirm="Issue this certificate with ACME DNS-01 now?">
         <button class="btn btn-primary" type="submit">Issue certificate</button>
       </form>
       {{ end }}
-      <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/delete">
+      <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/delete"
+        data-confirm="Delete this certificate metadata and linked target mappings?">
         <button class="btn btn-outline-danger" type="submit">Delete</button>
       </form>
       <a class="btn btn-outline-secondary" href="/certificates">Back to certificates</a>
@@ -72,6 +75,29 @@
     </div>
   </section>
 
+  {{ with .LatestJob }}
+  <section class="app-panel app-latest-job-panel">
+    <div class="app-panel-header">
+      <div>
+        <h2 class="app-panel-title">Latest job</h2>
+        <p class="app-panel-subtitle">Most recent operation recorded for this certificate</p>
+      </div>
+      <span class="badge text-bg-{{ statusClass .Job.Status }}">{{ .StatusLabel }}</span>
+    </div>
+    <div class="app-latest-job-body">
+      <div class="app-latest-job-main">
+        <span class="app-status-line">
+          <span class="app-status-dot app-status-dot-{{ statusClass .Job.Status }}"></span>
+          <span>{{ .TypeLabel }}</span>
+        </span>
+        <strong>{{ .Job.Message }}</strong>
+        <span class="text-secondary small">Started {{ .StartedAt }} · Finished {{ .FinishedAt }}</span>
+      </div>
+      <a class="btn btn-outline-primary btn-sm" href="/jobs/{{ .Job.ID }}">Open log</a>
+    </div>
+  </section>
+  {{ end }}
+
   <section class="app-cert-detail-grid">
     <div class="app-panel app-cert-operations-panel">
       <div class="app-panel-header">
@@ -110,7 +136,8 @@
               <div class="text-secondary small">Certificate already issued</div>
               {{ else }}
               <p>Create the real certificate files with Let's Encrypt before syncing to Kong.</p>
-              <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/issue">
+              <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/issue"
+                data-confirm="Issue this certificate with ACME DNS-01 now?">
                 <button class="btn btn-primary" type="submit">Issue certificate</button>
               </form>
               {{ end }}
@@ -134,7 +161,8 @@
               <button class="btn btn-outline-secondary" type="button" disabled>Sync to Kong</button>
               {{ else }}
               <p>Push the issued certificate to the Kong targets linked below when you are ready.</p>
-              <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/sync">
+              <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/sync"
+                data-confirm="Sync this certificate to linked Kong targets?">
                 <button class="btn btn-primary" type="submit">Sync to Kong</button>
               </form>
               {{ end }}
@@ -182,6 +210,7 @@
           <div>
             <h3>No Kong targets available</h3>
             <p>Add a target first, then link it here before syncing this certificate.</p>
+            <a class="btn btn-outline-primary btn-sm mt-3" href="/kong-targets/new">Add Kong target</a>
           </div>
         </div>
         {{ end }}

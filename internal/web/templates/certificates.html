@@ -103,7 +103,8 @@
                                     <a class="dropdown-item" href="/certificates/{{ .Certificate.ID }}/edit">Edit</a>
                                     <a class="dropdown-item" href="/certificates/{{ .Certificate.ID }}">View detail</a>
                                     <div class="dropdown-divider"></div>
-                                    <form method="post" action="/certificates/{{ .Certificate.ID }}/delete">
+                                    <form method="post" action="/certificates/{{ .Certificate.ID }}/delete"
+                                        data-confirm="Delete this certificate metadata and linked target mappings?">
                                         <button class="dropdown-item text-danger" type="submit">Delete</button>
                                     </form>
                                 </div>

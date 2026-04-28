@@ -243,6 +243,171 @@ a:hover {
   padding: 24px 32px;
 }
 
+.app-flash-wrap {
+  padding-bottom: 0;
+}
+
+.app-flash {
+  align-items: center;
+  background: var(--gd-surface);
+  border: 1px solid var(--gd-border);
+  border-radius: var(--gd-radius-md);
+  color: var(--gd-text);
+  display: flex;
+  font-weight: 700;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+.app-flash-dot {
+  border-radius: 9999px;
+  flex: 0 0 auto;
+  height: 9px;
+  width: 9px;
+}
+
+.app-flash-success {
+  background: var(--gd-badge-success-bg);
+  border-color: var(--gd-badge-success-border);
+  color: var(--gd-badge-success-text);
+}
+
+.app-flash-success .app-flash-dot {
+  background: var(--gd-success);
+}
+
+.app-flash-warning {
+  background: var(--gd-badge-warning-bg);
+  border-color: var(--gd-badge-warning-border);
+  color: var(--gd-badge-warning-text);
+}
+
+.app-flash-warning .app-flash-dot {
+  background: var(--gd-warning);
+}
+
+.app-flash-danger {
+  background: var(--gd-badge-danger-bg);
+  border-color: var(--gd-badge-danger-border);
+  color: var(--gd-badge-danger-text);
+}
+
+.app-flash-danger .app-flash-dot {
+  background: var(--gd-error);
+}
+
+.app-flash-secondary {
+  background: var(--gd-surface-2);
+  border-color: var(--gd-border);
+  color: var(--gd-text);
+}
+
+.app-flash-secondary .app-flash-dot {
+  background: var(--gd-neutral);
+}
+
+.app-confirm-open body {
+  overflow: hidden;
+}
+
+.app-confirm-backdrop {
+  align-items: center;
+  background: rgba(5, 9, 20, 0.72);
+  backdrop-filter: blur(10px);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 1080;
+}
+
+.app-confirm-backdrop[hidden] {
+  display: none;
+}
+
+.app-confirm-dialog {
+  background: var(--gd-surface);
+  border: 1px solid var(--gd-border);
+  border-radius: var(--gd-radius-lg);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+  display: grid;
+  gap: 18px;
+  grid-template-columns: auto minmax(0, 1fr);
+  max-width: 520px;
+  outline: 0;
+  padding: 22px;
+  transform: translateY(0);
+  width: min(100%, 520px);
+}
+
+.app-confirm-icon {
+  align-items: center;
+  background: var(--gd-primary-weak);
+  border: 1px solid var(--gd-badge-primary-border);
+  border-radius: var(--gd-radius-md);
+  color: var(--gd-badge-primary-text);
+  display: inline-flex;
+  font-size: 18px;
+  font-weight: 800;
+  height: 42px;
+  justify-content: center;
+  line-height: 1;
+  width: 42px;
+}
+
+.app-confirm-backdrop[data-confirm-tone="warning"] .app-confirm-icon {
+  background: var(--gd-badge-warning-bg);
+  border-color: var(--gd-badge-warning-border);
+  color: var(--gd-badge-warning-text);
+}
+
+.app-confirm-backdrop[data-confirm-tone="danger"] .app-confirm-icon {
+  background: var(--gd-badge-danger-bg);
+  border-color: var(--gd-badge-danger-border);
+  color: var(--gd-badge-danger-text);
+}
+
+.app-confirm-copy {
+  min-width: 0;
+}
+
+.app-confirm-kicker {
+  color: var(--gd-text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 16px;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.app-confirm-title {
+  color: var(--gd-text);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.app-confirm-message {
+  color: var(--gd-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+  margin: 10px 0 0;
+}
+
+.app-confirm-actions {
+  border-top: 1px solid var(--gd-border);
+  display: flex;
+  gap: 10px;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  padding-top: 16px;
+}
+
 .app-page-header {
   align-items: flex-start;
   display: flex;
@@ -414,6 +579,29 @@ a:hover {
 
 .app-cert-state-panel {
   margin-bottom: 24px;
+}
+
+.app-latest-job-panel {
+  margin-bottom: 24px;
+}
+
+.app-latest-job-body {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 16px 18px;
+}
+
+.app-latest-job-main {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.app-latest-job-main strong {
+  color: var(--gd-text);
+  overflow-wrap: anywhere;
 }
 
 .app-cert-state-body {
@@ -1593,6 +1781,26 @@ samp {
     width: 100%;
   }
 
+  .app-confirm-backdrop {
+    align-items: flex-end;
+    padding: 16px;
+  }
+
+  .app-confirm-dialog {
+    gap: 14px;
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .app-confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .app-confirm-actions .btn {
+    width: 100%;
+  }
+
   .app-metrics,
   .app-detail-grid {
     grid-template-columns: 1fr;
@@ -1673,5 +1881,14 @@ samp {
   .app-linked-target-heading {
     display: grid;
     justify-content: stretch;
+  }
+
+  .app-latest-job-body {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .app-latest-job-body .btn {
+    width: 100%;
   }
 }
