@@ -1,4 +1,4 @@
-ฝ:root {
+:root {
   color-scheme: light;
   --tblr-primary: #1db954;
   --tblr-primary-rgb: 29, 185, 84;
@@ -41,6 +41,40 @@ a {
 
 .navbar .nav-link.active .nav-link-icon {
   color: #15803d;
+}
+
+.modal[data-confirm-backdrop] {
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.modal[data-confirm-backdrop].show {
+  backdrop-filter: blur(6px) saturate(0.85);
+}
+
+.modal[data-confirm-backdrop] .modal-dialog {
+  max-width: min(32rem, calc(100vw - 1.5rem));
+}
+
+.modal[data-confirm-backdrop] .modal-content {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1.25rem 3rem rgba(15, 23, 42, 0.22);
+}
+
+.modal[data-confirm-backdrop] .modal-header {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.modal[data-confirm-backdrop] .modal-body {
+  font-size: 0.9375rem;
+}
+
+.modal[data-confirm-backdrop] .modal-footer {
+  background: rgba(248, 250, 252, 0.92);
+}
+
+.modal[data-confirm-backdrop] .modal-title {
+  color: #0f172a;
 }
 
 .app-tag-input {

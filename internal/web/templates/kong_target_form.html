@@ -1,19 +1,5 @@
 {{ define "content" }}
-<div class="page-header d-print-none">
-  <div class="container-xl">
-    <div class="row g-2 align-items-center">
-      <div class="col">
-        <h2 class="page-title">{{ .Heading }}</h2>
-        {{ if .Description }}
-        <div class="text-secondary">{{ .Description }}</div>
-        {{ end }}
-      </div>
-      <div class="col-auto ms-auto d-print-none">
-        <a class="btn btn-outline-secondary" href="/kong-targets">Back</a>
-      </div>
-    </div>
-  </div>
-</div>
+{{ template "page_header" . }}
 
 <div class="page-body">
   <div class="container-xl">

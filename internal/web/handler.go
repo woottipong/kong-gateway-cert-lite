@@ -41,6 +41,8 @@ type PageData struct {
 	Heading       string
 	Description   string
 	PrimaryAction string
+	ActionHref    string
+	ActionClass   string
 	Flash         *FlashMessage
 	Columns       []string
 	EmptyTitle    string
@@ -155,6 +157,8 @@ func (h *Handler) Certificates(c *fiber.Ctx) error {
 			Heading:       "Certificates",
 			Description:   "TLS coverage, expiry, and Kong sync readiness.",
 			PrimaryAction: "Add certificate",
+			ActionHref:    "/certificates/new",
+			ActionClass:   "btn btn-success",
 			Columns:       []string{"Certificate", "Lifecycle", "Kong sync", "Actions"},
 			EmptyTitle:    "No certificates",
 			EmptyText:     "Create the first certificate record to begin tracking expiry and Kong sync state.",
@@ -394,6 +398,8 @@ func (h *Handler) KongTargets(c *fiber.Ctx) error {
 			Heading:       "Kong targets",
 			Description:   "Kong Admin API endpoints used for certificate sync.",
 			PrimaryAction: "Add target",
+			ActionHref:    "/kong-targets/new",
+			ActionClass:   "btn btn-success",
 			Columns:       []string{"Target", "Health", "Auth", "Actions"},
 			EmptyTitle:    "No Kong targets",
 			EmptyText:     "Add a target before syncing certificates to Kong Gateway.",
@@ -532,6 +538,8 @@ func (h *Handler) Jobs(c *fiber.Ctx) error {
 			Heading:       "Jobs and logs",
 			Description:   "Operation history for issue, sync, and target checks.",
 			PrimaryAction: "Refresh",
+			ActionHref:    "/jobs",
+			ActionClass:   "btn btn-outline-secondary",
 			Columns:       []string{"Run", "Scope", "Outcome", "Actions"},
 			EmptyTitle:    "No jobs",
 			EmptyText:     "Job history appears after certificate, sync, or Kong target actions run.",
@@ -563,10 +571,15 @@ func (h *Handler) JobDetail(c *fiber.Ctx) error {
 			Heading:       "Job #" + strconv.FormatInt(job.Job.ID, 10),
 			Description:   "Run status, timing, and log output.",
 			PrimaryAction: "Back to jobs",
+			ActionHref:    "/jobs",
+			ActionClass:   "btn btn-outline-secondary",
+			EmptyTitle:    "No log output",
+			EmptyText:     "This job has no captured log lines.",
 		}),
 		Job: job,
 	})
 }
+
 func (h *Handler) renderCertificateForm(c *fiber.Ctx, status int, form usecase.CertificateFormData, errors map[string]string, isEdit bool, domainsAndSNILock bool) error {
 	title := "Add certificate"
 	action := "/certificates"
@@ -583,7 +596,9 @@ func (h *Handler) renderCertificateForm(c *fiber.Ctx, status int, form usecase.C
 			Active:        "certificates",
 			Heading:       title,
 			Description:   description,
-			PrimaryAction: "Issue certificate",
+			PrimaryAction: "Back",
+			ActionHref:    "/certificates",
+			ActionClass:   "btn btn-outline-secondary",
 		}),
 		Form:              form,
 		Errors:            errors,
@@ -625,7 +640,9 @@ func (h *Handler) renderKongTargetForm(c *fiber.Ctx, status int, form usecase.Ko
 			Active:        "kong-targets",
 			Heading:       title,
 			Description:   description,
-			PrimaryAction: "Save target",
+			PrimaryAction: "Back",
+			ActionHref:    "/kong-targets",
+			ActionClass:   "btn btn-outline-secondary",
 		}),
 		Form:   form,
 		Errors: errors,
@@ -640,7 +657,7 @@ func (h *Handler) render(c *fiber.Ctx, status int, contentTemplate string, data 
 		"jobTypeClass": jobTypeClass,
 		"statusClass":  statusClass,
 		"join":         strings.Join,
-	}).ParseFS(templateFiles, "templates/layout.html", contentTemplate)
+	}).ParseFS(templateFiles, "templates/layout.html", "templates/partials.html", contentTemplate)
 	if err != nil {
 		h.logger.Error("parse templates", "error", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "template error")

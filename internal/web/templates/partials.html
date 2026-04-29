@@ -1,0 +1,27 @@
+{{ define "page_header" }}
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <h2 class="page-title">{{ .Heading }}</h2>
+                {{ if .Description }}
+                <div class="text-secondary">{{ .Description }}</div>
+                {{ end }}
+            </div>
+            {{ if .ActionHref }}
+            <div class="col-auto ms-auto d-print-none">
+                <a class="{{ if .ActionClass }}{{ .ActionClass }}{{ else }}btn btn-outline-secondary{{ end }}"
+                    href="{{ .ActionHref }}">{{ .PrimaryAction }}</a>
+            </div>
+            {{ end }}
+        </div>
+    </div>
+</div>
+{{ end }}
+
+{{ define "empty_state" }}
+<div class="empty m-0 w-100">
+    <div class="empty-title">{{ .EmptyTitle }}</div>
+    <p class="empty-subtitle text-secondary">{{ .EmptyText }}</p>
+</div>
+{{ end }}

@@ -1,19 +1,5 @@
 {{ define "content" }}
-<div class="page-header d-print-none">
-  <div class="container-xl">
-    <div class="row g-2 align-items-center">
-      <div class="col">
-        <h2 class="page-title">{{ .Heading }}</h2>
-        {{ if .Description }}
-        <div class="text-secondary">{{ .Description }}</div>
-        {{ end }}
-      </div>
-      <div class="col-auto ms-auto d-print-none">
-        <a class="btn btn-outline-secondary" href="/jobs">{{ .PrimaryAction }}</a>
-      </div>
-    </div>
-  </div>
-</div>
+{{ template "page_header" . }}
 
 <div class="page-body">
   <div class="container-xl">
@@ -77,10 +63,7 @@
             <pre
               class="bg-body-secondary border rounded p-3 mb-0 font-monospace small text-body overflow-auto">{{ .Job.Job.Log }}</pre>
             {{ else }}
-            <div class="empty m-0 w-100">
-              <div class="empty-title">No log output</div>
-              <p class="empty-subtitle text-secondary">This job has no captured log lines.</p>
-            </div>
+            {{ template "empty_state" . }}
             {{ end }}
           </div>
         </section>
