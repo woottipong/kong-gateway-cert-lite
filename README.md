@@ -8,7 +8,7 @@ The current implementation has:
 - Go Fiber HTTP adapter
 - SQLite database and embedded migrations
 - Clean Architecture package layout
-- Server-rendered HTML with Bootstrap 5
+- Server-rendered HTML with Tabler on top of Bootstrap 5
 - Modern premium minimal light-first UI
 - Certificate create, edit, delete, list, and detail flow
 - Kong target create, edit, delete, list, and connectivity test flow
@@ -205,9 +205,8 @@ Full architecture notes live in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 The UI uses a modern premium minimal design direction:
 
 - Light-first operational console
+- Tabler compiled CSS and JS served locally
 - Restrained green accent for primary actions and important status
-- Plus Jakarta Sans and JetBrains Mono from Google Fonts
-- Bootstrap 5 local static assets
 - Small JavaScript only for focused interaction polish
 
 Static assets are embedded from:

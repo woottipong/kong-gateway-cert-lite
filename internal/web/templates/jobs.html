@@ -1,84 +1,94 @@
 {{ define "content" }}
-<div class="container-fluid app-content">
-  <header class="app-page-header">
-    <div>
-      <h1 class="app-page-title">{{ .Heading }}</h1>
-      <p class="app-page-description">{{ .Description }}</p>
-    </div>
-    <a class="btn btn-outline-secondary" href="/jobs">{{ .PrimaryAction }}</a>
-  </header>
-
-  <section class="app-metrics" aria-label="Summary">
-    {{ range .Metrics }}
-    <div class="app-metric">
-      <span class="app-metric-label">{{ .Label }}</span>
-      <span class="app-metric-value text-{{ .Tone }}">{{ .Value }}</span>
-    </div>
-    {{ end }}
-  </section>
-
-  <section class="app-panel" data-list-panel>
-    <div class="app-panel-header">
-      <div>
-        <h2 class="app-panel-title">Operation timeline</h2>
-        <p class="app-panel-subtitle">Newest runs appear first. Use filters to isolate failures, job type, or target
-          scope.</p>
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Workspace</div>
+        <h2 class="page-title">{{ .Heading }}</h2>
+        <div class="text-secondary">{{ .Description }}</div>
       </div>
-      <span class="badge text-bg-secondary">{{ len .Jobs }} / {{ .TotalCount }} records</span>
+      <div class="col-auto ms-auto d-print-none">
+        <a class="btn btn-outline-secondary" href="/jobs">{{ .PrimaryAction }}</a>
+      </div>
     </div>
-    <div class="table-responsive">
-      <table class="table app-table app-log-table align-middle mb-0">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Event</th>
-            <th>Detail</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {{ if .Jobs }}
-          {{ range .Jobs }}
-          <tr class="app-table-row app-job-row app-job-row-{{ .Job.Status }}" data-row-href="/jobs/{{ .Job.ID }}">
-            <td class="app-log-time">{{ .StartedAt }}</td>
-            <td class="app-log-event">
-              <div class="app-log-event-line">
-                <span class="app-log-type app-log-type-{{ .Job.Type }}">{{ .TypeLabel }}</span>
-                <span class="app-status-dot app-status-dot-{{ statusClass .Job.Status }}"></span>
-                <span class="app-cell-meta">{{ .StatusLabel }}</span>
-              </div>
-            </td>
-            <td class="app-log-detail">
-              <span class="app-log-scope">
-                {{ if .Job.CertificateID }}<a class="fw-semibold" href="/certificates/{{ .Job.CertificateID }}"
-                  onclick="event.stopPropagation()">{{ .CertificateLabel }}</a>{{ end }}
-                {{ if .KongTargetLabel }}<span class="app-cell-meta">{{ .KongTargetLabel }}</span>{{ end }}
-              </span>
-              {{ if .Job.Message }}<span class="app-cell-meta app-log-msg">{{ .Job.Message }}</span>{{ end }}
-            </td>
-            <td class="text-end app-row-actions-cell" onclick="event.stopPropagation()">
-              <div class="app-row-actions">
-                <a class="app-row-btn" href="/jobs/{{ .Job.ID }}">Log</a>
-              </div>
-            </td>
-          </tr>
-          {{ end }}
-          {{ else }}
-          <tr>
-            <td colspan="4">
-              <div class="app-empty-state">
-                <span class="app-empty-icon"></span>
-                <div>
-                  <h3>{{ .EmptyTitle }}</h3>
-                  <p>{{ .EmptyText }}</p>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="container-xl">
+    <div class="row row-deck row-cards mb-3">
+      {{ range .Metrics }}
+      <div class="col-12 col-sm-4">
+        <div class="card card-sm">
+          <div class="card-body">
+            <div class="text-secondary text-uppercase fs-5 fw-medium">{{ .Label }}</div>
+            <div class="display-6 text-{{ .Tone }} fw-bold">{{ .Value }}</div>
+          </div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Operation timeline</h3>
+          <div class="text-secondary">Newest runs appear first. Use filters to isolate failures, job type, or target
+            scope.</div>
+        </div>
+        <div class="card-actions text-secondary">{{ len .Jobs }} / {{ .TotalCount }} records</div>
+      </div>
+      <div class="table-responsive">
+        <table class="table card-table table-vcenter align-middle mb-0 app-log-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Event</th>
+              <th>Detail</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ if .Jobs }}
+            {{ range .Jobs }}
+            <tr class="app-row" data-row-href="/jobs/{{ .Job.ID }}">
+              <td class="app-log-time">{{ .StartedAt }}</td>
+              <td class="app-log-event">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <span class="app-log-type app-log-type-{{ .Job.Type }}">{{ .TypeLabel }}</span>
+                  <span class="app-status-dot app-status-dot-{{ statusClass .Job.Status }}"></span>
+                  <span class="text-secondary">{{ .StatusLabel }}</span>
                 </div>
-              </div>
-            </td>
-          </tr>
-          {{ end }}
-        </tbody>
-      </table>
+              </td>
+              <td class="app-log-detail">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                  {{ if .Job.CertificateID }}<a class="fw-semibold" href="/certificates/{{ .Job.CertificateID }}"
+                    onclick="event.stopPropagation()">{{ .CertificateLabel }}</a>{{ end }}
+                  {{ if .KongTargetLabel }}<span class="text-secondary">{{ .KongTargetLabel }}</span>{{ end }}
+                </div>
+                {{ if .Job.Message }}<div class="text-secondary app-log-msg">{{ .Job.Message }}</div>{{ end }}
+              </td>
+              <td class="text-end" onclick="event.stopPropagation()">
+                <a class="btn btn-outline-secondary btn-sm" href="/jobs/{{ .Job.ID }}">Log</a>
+              </td>
+            </tr>
+            {{ end }}
+            {{ else }}
+            <tr>
+              <td colspan="4">
+                <div class="app-empty-state">
+                  <div class="empty">
+                    <div class="empty-title">{{ .EmptyTitle }}</div>
+                    <p class="empty-subtitle text-secondary">{{ .EmptyText }}</p>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </section>
+  </div>
 </div>
 {{ end }}

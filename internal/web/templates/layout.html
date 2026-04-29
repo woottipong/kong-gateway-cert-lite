@@ -1,97 +1,108 @@
 {{ define "layout" }}
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ .Title }} - kong-cert-lite</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
-  <link rel="stylesheet" href="/static/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/tabler/tabler.min.css">
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
 
 <body>
-  <div class="app-shell">
-    <header class="app-sidebar">
-      <div class="app-brand">
-        <span class="app-brand-mark">K</span>
-        <span>
-          <span class="app-brand-name">kong-cert-lite</span>
-          <span class="app-brand-subtitle">Certificate control plane</span>
-        </span>
+  <div class="page">
+    <aside class="navbar navbar-vertical navbar-expand-lg navbar-light border-end d-print-none app-sidebar">
+      <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu"
+          aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <a class="navbar-brand navbar-brand-autodark" href="/certificates" aria-label="kong-cert-lite home">
+          <span class="avatar avatar-sm bg-success text-white fw-bold app-brand-mark">K</span>
+          <span class="app-brand-copy">
+            <span class="app-brand-name">kong-cert-lite</span>
+            <span class="app-brand-subtitle">Certificate control plane</span>
+          </span>
+        </a>
+        <div class="collapse navbar-collapse" id="sidebar-menu">
+          <ul class="navbar-nav pt-lg-3">
+            <li class="nav-item">
+              <a class="nav-link {{ .NavCertificatesClass }}" href="/certificates">
+                <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M5 3h7l5 5v13H5z"></path>
+                    <path d="M12 3v5h5"></path>
+                    <path d="M8 13h8"></path>
+                    <path d="M8 17h8"></path>
+                  </svg>
+                </span>
+                <span class="nav-link-title">Certificates</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {{ .NavKongTargetsClass }}" href="/kong-targets">
+                <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M4 7h16"></path>
+                    <path d="M4 12h16"></path>
+                    <path d="M4 17h16"></path>
+                    <path d="M9 7v10"></path>
+                    <path d="M15 7v10"></path>
+                  </svg>
+                </span>
+                <span class="nav-link-title">Kong Targets</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {{ .NavJobsClass }}" href="/jobs">
+                <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M12 7v5l3 3"></path>
+                    <circle cx="12" cy="12" r="9"></circle>
+                  </svg>
+                </span>
+                <span class="nav-link-title">Jobs / Logs</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {{ .NavSettingsClass }}" href="/settings">
+                <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M4 6h16"></path>
+                    <path d="M4 12h10"></path>
+                    <path d="M4 18h16"></path>
+                    <path d="M9 6v0"></path>
+                    <path d="M14 12v0"></path>
+                    <path d="M18 18v0"></path>
+                  </svg>
+                </span>
+                <span class="nav-link-title">Settings</span>
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
-      <nav class="nav nav-pills gap-1" aria-label="Main navigation">
-        <a class="{{ .NavCertificatesClass }}" href="/certificates">
-          <span class="app-nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M5 2.5h4.25L12 5.25V13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z" />
-              <path d="M9 2.5v2.75h2.75" />
-              <path d="M5.75 8h4.5" />
-              <path d="M5.75 10.5h4.5" />
-            </svg>
-          </span>
-          <span class="app-nav-label">Certificates</span>
-        </a>
-        <a class="{{ .NavKongTargetsClass }}" href="/kong-targets">
-          <span class="app-nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"
-              stroke-linejoin="round">
-              <rect x="2.5" y="3" width="11" height="3" rx="1" />
-              <rect x="2.5" y="10" width="11" height="3" rx="1" />
-              <path d="M4.75 6v4" />
-              <path d="M8 6v4" />
-              <path d="M11.25 6v4" />
-            </svg>
-          </span>
-          <span class="app-nav-label">Kong Targets</span>
-        </a>
-        <a class="{{ .NavJobsClass }}" href="/jobs">
-          <span class="app-nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M5 3.25h6" />
-              <path d="M8 3.25v2" />
-              <circle cx="8" cy="9" r="4.5" />
-              <path d="M8 7.5v1.75l1.25 1.25" />
-            </svg>
-          </span>
-          <span class="app-nav-label">Jobs / Logs</span>
-        </a>
-        <a class="{{ .NavSettingsClass }}" href="/settings">
-          <span class="app-nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M3 4.5h2.25" />
-              <path d="M7.75 4.5H13" />
-              <path d="M3 11.5h5.25" />
-              <path d="M10.75 11.5H13" />
-              <circle cx="6.5" cy="4.5" r="1.25" />
-              <circle cx="9.5" cy="11.5" r="1.25" />
-            </svg>
-          </span>
-          <span class="app-nav-label">Settings</span>
-        </a>
-      </nav>
+    </aside>
 
-    </header>
-
-    <main class="app-main">
+    <div class="page-wrapper">
       {{ with .Flash }}
-      <div class="container-fluid app-content app-flash-wrap">
-        <div class="app-flash app-flash-{{ .Tone }}" role="status">
-          <span class="app-flash-dot"></span>
-          <span>{{ .Message }}</span>
+      <div class="container-xl pt-3">
+        <div class="alert alert-{{ .Tone }} app-flash" role="status">
+          <div>{{ .Message }}</div>
         </div>
       </div>
       {{ end }}
       {{ template "content" . }}
-    </main>
+    </div>
   </div>
   <div class="app-confirm-backdrop" data-confirm-backdrop hidden>
     <section class="app-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title"
@@ -108,7 +119,7 @@
       </div>
     </section>
   </div>
-  <script src="/static/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="/static/tabler/tabler.min.js"></script>
   <script src="/static/js/actions.js"></script>
 </body>
 

@@ -56,11 +56,11 @@ func TestPlaceholderPagesRenderLayout(t *testing.T) {
 				t.Fatalf("expected status 200, got %d", resp.StatusCode)
 			}
 			for _, want := range []string{
-				`<header class="app-sidebar">`,
-				`class="app-metrics"`,
-				`class="app-panel"`,
-				`href="/static/bootstrap/bootstrap.min.css"`,
-				`src="/static/bootstrap/bootstrap.bundle.min.js"`,
+				`class="navbar navbar-vertical navbar-expand-lg navbar-light border-end d-print-none app-sidebar"`,
+				`class="page-header d-print-none"`,
+				`class="card"`,
+				`href="/static/tabler/tabler.min.css"`,
+				`src="/static/tabler/tabler.min.js"`,
 				`src="/static/js/actions.js"`,
 				tt.wantTitle,
 				tt.wantActive,
@@ -87,8 +87,8 @@ func TestHomeRedirectsToCertificates(t *testing.T) {
 
 func TestStaticAssets(t *testing.T) {
 	tests := []string{
-		"/static/bootstrap/bootstrap.min.css",
-		"/static/bootstrap/bootstrap.bundle.min.js",
+		"/static/tabler/tabler.min.css",
+		"/static/tabler/tabler.min.js",
 		"/static/css/app.css",
 		"/static/js/actions.js",
 	}

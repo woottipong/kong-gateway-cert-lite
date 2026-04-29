@@ -1,150 +1,159 @@
 {{ define "content" }}
-<div class="container-fluid app-content">
-  <header class="app-page-header">
-    <div>
-      <h1 class="app-page-title">{{ .Heading }}</h1>
-      <p class="app-page-description">{{ .Description }}</p>
-    </div>
-    <a class="btn btn-outline-secondary" href="/certificates">Back</a>
-  </header>
-
-  {{ if .Errors }}
-  <div class="alert alert-danger" role="alert">
-    Fix the highlighted fields before saving the certificate.
-  </div>
-  {{ end }}
-
-  <form class="app-panel app-form app-certificate-form" method="post" action="{{ .Action }}" novalidate>
-    <div class="app-panel-header">
-      <div>
-        <h2 class="app-panel-title">Certificate request</h2>
-        <p class="app-panel-subtitle">Create the inventory record first, then issue and sync it from the certificate
-          detail page</p>
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">{{ if .IsEdit }}Edit certificate{{ else }}New certificate{{ end }}</div>
+        <h2 class="page-title">{{ .Heading }}</h2>
+        <div class="text-secondary">{{ .Description }}</div>
       </div>
-      <span class="badge text-bg-warning">{{ if .IsEdit }}Edit{{ else }}Pending{{ end }}</span>
+      <div class="col-auto ms-auto d-print-none">
+        <a class="btn btn-outline-secondary" href="/certificates">Back</a>
+      </div>
     </div>
+  </div>
+</div>
 
-    <div class="app-form-body">
-      <div class="app-certificate-form-layout">
-        <div class="app-form-stack">
-          <section class="app-form-section" aria-labelledby="certificate_identity_heading">
-            <div class="app-form-section-heading">
-              <h3 id="certificate_identity_heading">Identity</h3>
-              <p>Name the certificate and set the ACME account email.</p>
-            </div>
-            <div class="row g-3">
-              <div class="col-12 col-lg-6">
-                <label class="form-label" for="name">Certificate name</label>
-                <input class="form-control {{ if fieldError .Errors " name" }}is-invalid{{ end }}" id="name" name="name"
-                  value="{{ .Form.Name }}" placeholder="Production wildcard">
-                {{ with fieldError .Errors "name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
-              </div>
-              <div class="col-12 col-lg-6">
-                <label class="form-label" for="email">ACME account email</label>
-                <input class="form-control {{ if fieldError .Errors " email" }}is-invalid{{ end }}" id="email"
-                  name="email" value="{{ .Form.Email }}" placeholder="admin@example.com">
-                {{ with fieldError .Errors "email" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
-              </div>
-            </div>
-          </section>
+<div class="page-body">
+  <div class="container-xl">
+    {{ if .Errors }}
+    <div class="alert alert-danger" role="alert">
+      Fix the highlighted fields before saving the certificate.
+    </div>
+    {{ end }}
 
-          <section class="app-form-section" aria-labelledby="certificate_domains_heading">
-            <div class="app-form-section-heading">
-              <h3 id="certificate_domains_heading">Coverage</h3>
-              <p>Keep domains and SNI aligned unless Kong needs a narrower SNI list.</p>
+    <div class="row row-deck row-cards">
+      <div class="col-lg-8">
+        <form class="card" method="post" action="{{ .Action }}" novalidate>
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">{{ if .IsEdit }}Certificate metadata{{ else }}Certificate request{{ end }}</h3>
+              <div class="text-secondary">{{ if .IsEdit }}Update metadata below. Coverage fields are locked after the
+                certificate has been issued.{{ else }}Create the inventory record first, then issue and sync it from
+                the certificate detail page.{{ end }}</div>
             </div>
-            <div class="row g-3">
-              <div class="col-12 col-lg-6">
-                <label class="form-label">Domains</label>
-                <div class="app-tag-input{{ if fieldError .Errors " domains" }} is-invalid{{ end }}"
-                  data-tag-for="domains" {{ if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
-                {{ with fieldError .Errors "domains" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
-                <textarea class="visually-hidden" id="domains" name="domains" {{ if .DomainsAndSNILock }} disabled{{ end
-                  }}>{{ .Form.DomainsText }}</textarea>
-                <div class="form-text">{{ .DomainsHelpText }}</div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <label class="form-label">SNI values</label>
-                <div class="app-tag-input{{ if fieldError .Errors " snis" }} is-invalid{{ end }}" data-tag-for="snis" {{
-                  if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
-                {{ with fieldError .Errors "snis" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
-                <textarea class="visually-hidden" id="snis" name="snis" {{ if .DomainsAndSNILock }} disabled{{ end
-                  }}>{{ .Form.SNIsText }}</textarea>
-                <div class="form-text">{{ .SNIsHelpText }}</div>
-              </div>
+            <div class="card-actions">
+              <span class="badge bg-warning-lt text-warning">{{ if .IsEdit }}Edit{{ else }}Pending{{ end }}</span>
             </div>
-          </section>
-
-          <section class="app-form-section" aria-labelledby="certificate_renewal_heading">
-            <div class="app-form-section-heading">
-              <h3 id="certificate_renewal_heading">Renewal policy</h3>
-              <p>Set when this certificate should enter the renewal window.</p>
-            </div>
-            <div class="row g-3">
-              <div class="col-12 col-lg-6">
-                <label class="form-label" for="renew_before_days">Renew before expiry</label>
-                <div class="input-group">
-                  <input class="form-control {{ if fieldError .Errors " renew_before_days" }}is-invalid{{ end }}"
-                    id="renew_before_days" name="renew_before_days" type="number" min="1"
-                    value="{{ .Form.RenewBeforeDays }}">
-                  <span class="input-group-text">days</span>
-                  {{ with fieldError .Errors "renew_before_days" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+          </div>
+          <div class="card-body">
+            <div class="mb-4">
+              <div class="subheader mb-2">Identity</div>
+              <div class="row g-3">
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="name">Certificate name</label>
+                  <input class="form-control {{ if fieldError .Errors "name" }}is-invalid{{ end }}" id="name"
+                    name="name" value="{{ .Form.Name }}" placeholder="Production wildcard">
+                  {{ with fieldError .Errors "name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="email">ACME account email</label>
+                  <input class="form-control {{ if fieldError .Errors "email" }}is-invalid{{ end }}" id="email"
+                    name="email" value="{{ .Form.Email }}" placeholder="admin@example.com">
+                  {{ with fieldError .Errors "email" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
                 </div>
               </div>
-              <div class="col-12 col-lg-6 d-flex align-items-end">
-                <div class="app-switch-row">
-                  <div>
-                    <label class="form-label d-block" for="auto_renew">Auto renew</label>
-                    <span class="form-text">Queue renewal jobs when the certificate reaches the renewal window.</span>
+            </div>
+
+            <div class="mb-4">
+              <div class="subheader mb-2">Coverage</div>
+              <div class="row g-3">
+                <div class="col-12 col-lg-6">
+                  <label class="form-label">Domains</label>
+                  <div class="app-tag-input{{ if fieldError .Errors "domains" }} is-invalid{{ end }}"
+                    data-tag-for="domains" {{ if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
+                  {{ with fieldError .Errors "domains" }}<div class="invalid-feedback d-block">{{ . }}</div>{{ end }}
+                  <textarea class="visually-hidden" id="domains" name="domains" {{ if .DomainsAndSNILock }}disabled{{
+                    end }}>{{ .Form.DomainsText }}</textarea>
+                  <div class="form-hint">{{ .DomainsHelpText }}</div>
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label">SNI values</label>
+                  <div class="app-tag-input{{ if fieldError .Errors "snis" }} is-invalid{{ end }}" data-tag-for="snis" {{
+                    if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
+                  {{ with fieldError .Errors "snis" }}<div class="invalid-feedback d-block">{{ . }}</div>{{ end }}
+                  <textarea class="visually-hidden" id="snis" name="snis" {{ if .DomainsAndSNILock }}disabled{{ end
+                    }}>{{ .Form.SNIsText }}</textarea>
+                  <div class="form-hint">{{ .SNIsHelpText }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="subheader mb-2">Renewal policy</div>
+              <div class="row g-3 align-items-end">
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="renew_before_days">Renew before expiry</label>
+                  <div class="input-group">
+                    <input class="form-control {{ if fieldError .Errors "renew_before_days" }}is-invalid{{ end }}"
+                      id="renew_before_days" name="renew_before_days" type="number" min="1"
+                      value="{{ .Form.RenewBeforeDays }}">
+                    <span class="input-group-text">days</span>
                   </div>
-                  <div class="form-check form-switch">
+                  {{ with fieldError .Errors "renew_before_days" }}<div class="invalid-feedback d-block">{{ . }}</div>{{ end }}
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-check form-switch">
                     <input class="form-check-input" id="auto_renew" name="auto_renew" type="checkbox" {{ if
                       .Form.AutoRenew }}checked{{ end }}>
-                  </div>
+                    <span class="form-check-label">
+                      <span class="d-block">Auto renew</span>
+                      <span class="form-hint">Queue renewal jobs when the certificate reaches the renewal window.</span>
+                    </span>
+                  </label>
                 </div>
               </div>
             </div>
-          </section>
-        </div>
+          </div>
+          <div class="card-footer text-end">
+            <div class="btn-list justify-content-end">
+              <a class="btn btn-outline-secondary" href="/certificates">Cancel</a>
+              <button class="btn btn-success" type="submit">{{ if .IsEdit }}Save changes{{ else }}Create pending
+                certificate{{ end }}</button>
+            </div>
+          </div>
+        </form>
+      </div>
 
-        <aside class="app-form-aside" aria-label="Certificate workflow">
-          <span class="app-form-aside-label">{{ if .IsEdit }}Certificate lifecycle{{ else }}Next workflow{{ end
-            }}</span>
-          <ol class="app-form-checklist">
-            <li class="app-form-checklist-item{{ if .IsEdit }} is-done{{ end }}">
-              <span class="app-form-checklist-marker">{{ if .IsEdit }}✓{{ else }}1{{ end }}</span>
-              <span>Create pending metadata</span>
-            </li>
-            <li
-              class="app-form-checklist-item{{ if and .IsEdit .DomainsAndSNILock }} is-done{{ else if and .IsEdit (not .DomainsAndSNILock) }} is-current{{ end }}">
-              <span class="app-form-checklist-marker">{{ if and .IsEdit .DomainsAndSNILock }}✓{{ else }}2{{ end
-                }}</span>
-              <div>
-                <span>Issue the certificate</span>
-                {{ if and .IsEdit (not .DomainsAndSNILock) }}
-                <a class="app-form-checklist-action" href="/certificates/{{ .Form.ID }}">Go to detail →</a>
-                {{ end }}
-              </div>
-            </li>
-            <li class="app-form-checklist-item{{ if and .IsEdit .DomainsAndSNILock }} is-current{{ end }}">
-              <span class="app-form-checklist-marker">3</span>
-              <div>
-                <span>Link and sync to Kong targets</span>
-                {{ if and .IsEdit .DomainsAndSNILock }}
-                <a class="app-form-checklist-action" href="/certificates/{{ .Form.ID }}">Go to detail →</a>
-                {{ end }}
-              </div>
-            </li>
-          </ol>
-        </aside>
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">{{ if .IsEdit }}Certificate lifecycle{{ else }}Next workflow{{ end }}</h3>
+              <div class="text-secondary">What happens after this step.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <ol class="app-form-checklist">
+              <li class="app-form-checklist-item{{ if .IsEdit }} is-done{{ end }}">
+                <span class="app-form-checklist-marker">{{ if .IsEdit }}✓{{ else }}1{{ end }}</span>
+                <span>Create pending metadata</span>
+              </li>
+              <li class="app-form-checklist-item{{ if and .IsEdit .DomainsAndSNILock }} is-done{{ else if and .IsEdit
+                (not .DomainsAndSNILock) }} is-current{{ end }}">
+                <span class="app-form-checklist-marker">{{ if and .IsEdit .DomainsAndSNILock }}✓{{ else }}2{{ end
+                  }}</span>
+                <div>
+                  <span>Issue the certificate</span>
+                  {{ if and .IsEdit (not .DomainsAndSNILock) }}
+                  <a class="app-form-checklist-action" href="/certificates/{{ .Form.ID }}">Go to detail →</a>
+                  {{ end }}
+                </div>
+              </li>
+              <li class="app-form-checklist-item{{ if and .IsEdit .DomainsAndSNILock }} is-current{{ end }}">
+                <span class="app-form-checklist-marker">3</span>
+                <div>
+                  <span>Link and sync to Kong targets</span>
+                  {{ if and .IsEdit .DomainsAndSNILock }}
+                  <a class="app-form-checklist-action" href="/certificates/{{ .Form.ID }}">Go to detail →</a>
+                  {{ end }}
+                </div>
+              </li>
+            </ol>
+          </div>
+        </div>
       </div>
     </div>
-
-    <div class="app-form-footer">
-      <a class="btn btn-outline-secondary" href="/certificates">Cancel</a>
-      <button class="btn btn-primary" type="submit">{{ if .IsEdit }}Save changes{{ else }}Create pending certificate{{
-        end }}</button>
-    </div>
-  </form>
+  </div>
 </div>
 {{ end }}

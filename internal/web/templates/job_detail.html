@@ -1,63 +1,66 @@
 {{ define "content" }}
-<div class="container-fluid app-content">
-  <header class="app-page-header">
-    <div>
-      <h1 class="app-page-title">{{ .Heading }}</h1>
-      <p class="app-page-description">{{ .Description }}</p>
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Job detail</div>
+        <h2 class="page-title">{{ .Heading }}</h2>
+        <div class="text-secondary">{{ .Description }}</div>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <a class="btn btn-outline-secondary" href="/jobs">{{ .PrimaryAction }}</a>
+      </div>
     </div>
-    <a class="btn btn-outline-secondary" href="/jobs">{{ .PrimaryAction }}</a>
-  </header>
+  </div>
+</div>
 
-  <div class="app-detail-grid">
-    <section class="app-panel">
-      <div class="app-panel-header">
-        <div>
-          <h2 class="app-panel-title">Job detail</h2>
-          <p class="app-panel-subtitle">Short execution summary and linked records</p>
-        </div>
-        <span class="badge text-bg-{{ statusClass .Job.Job.Status }}">{{ .Job.StatusLabel }}</span>
-      </div>
-      <dl class="app-description-list">
-        <div>
-          <dt>Type</dt>
-          <dd>{{ .Job.TypeLabel }}</dd>
-        </div>
-        <div>
-          <dt>Status</dt>
-          <dd>{{ .Job.StatusLabel }}</dd>
-        </div>
-        <div>
-          <dt>Started at</dt>
-          <dd>{{ .Job.StartedAt }}</dd>
-        </div>
-        <div>
-          <dt>Finished at</dt>
-          <dd>{{ .Job.FinishedAt }}</dd>
-        </div>
-        <div>
-          <dt>Certificate</dt>
-          <dd>{{ .Job.CertificateLabel }}</dd>
-        </div>
-        <div>
-          <dt>Kong target</dt>
-          <dd>{{ .Job.KongTargetLabel }}</dd>
-        </div>
-        <div>
-          <dt>Message</dt>
-          <dd>{{ .Job.Job.Message }}</dd>
-        </div>
-      </dl>
-    </section>
-
-    <section class="app-panel">
-      <div class="app-panel-header">
-        <div>
-          <h2 class="app-panel-title">Full logs</h2>
-          <p class="app-panel-subtitle">Stored output for debugging failed or incomplete runs</p>
+<div class="page-body">
+  <div class="container-xl">
+    <div class="row g-3">
+      <div class="col-lg-5">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Job detail</h3>
+              <div class="text-secondary">Short execution summary and linked records</div>
+            </div>
+            <span class="badge bg-{{ statusClass .Job.Job.Status }}-lt text-{{ statusClass .Job.Job.Status }}">{{ .Job.StatusLabel }}</span>
+          </div>
+          <div class="card-body">
+            <dl class="row mb-0">
+              <dt class="col-5 text-secondary">Type</dt>
+              <dd class="col-7">{{ .Job.TypeLabel }}</dd>
+              <dt class="col-5 text-secondary">Status</dt>
+              <dd class="col-7">{{ .Job.StatusLabel }}</dd>
+              <dt class="col-5 text-secondary">Started at</dt>
+              <dd class="col-7">{{ .Job.StartedAt }}</dd>
+              <dt class="col-5 text-secondary">Finished at</dt>
+              <dd class="col-7">{{ .Job.FinishedAt }}</dd>
+              <dt class="col-5 text-secondary">Certificate</dt>
+              <dd class="col-7">{{ .Job.CertificateLabel }}</dd>
+              <dt class="col-5 text-secondary">Kong target</dt>
+              <dd class="col-7">{{ .Job.KongTargetLabel }}</dd>
+              <dt class="col-5 text-secondary">Message</dt>
+              <dd class="col-7">{{ .Job.Job.Message }}</dd>
+            </dl>
+          </div>
         </div>
       </div>
-      <pre class="app-log-block">{{ .Job.Job.Log }}</pre>
-    </section>
+
+      <div class="col-lg-7">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Full logs</h3>
+              <div class="text-secondary">Stored output for debugging failed or incomplete runs</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <pre class="app-log-block">{{ .Job.Job.Log }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 {{ end }}

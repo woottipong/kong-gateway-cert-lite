@@ -1,95 +1,104 @@
 {{ define "content" }}
-<div class="container-fluid app-content">
-  <header class="app-page-header">
-    <div>
-      <h1 class="app-page-title">{{ .Heading }}</h1>
-      <p class="app-page-description">{{ .Description }}</p>
-    </div>
-    <a class="btn btn-primary" href="/kong-targets/new">{{ .PrimaryAction }}</a>
-  </header>
-
-  <section class="app-metrics" aria-label="Summary">
-    {{ range .Metrics }}
-    <div class="app-metric">
-      <span class="app-metric-label">{{ .Label }}</span>
-      <span class="app-metric-value text-{{ .Tone }}">{{ .Value }}</span>
-    </div>
-    {{ end }}
-  </section>
-
-  <section class="app-panel" data-list-panel>
-    <div class="app-panel-header">
-      <div>
-        <h2 class="app-panel-title">Target inventory</h2>
-        <p class="app-panel-subtitle">Admin API endpoints grouped by environment, health state, and auth mode.</p>
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Workspace</div>
+        <h2 class="page-title">{{ .Heading }}</h2>
+        <div class="text-secondary">{{ .Description }}</div>
       </div>
-      <span class="badge text-bg-secondary">{{ len .Targets }} / {{ .TotalCount }} records</span>
+      <div class="col-auto ms-auto d-print-none">
+        <a class="btn btn-success" href="/kong-targets/new">{{ .PrimaryAction }}</a>
+      </div>
     </div>
-    <div class="table-responsive">
-      <table class="table app-table align-middle mb-0">
-        <thead>
-          <tr>
-            {{ range .Columns }}
-            <th scope="col">{{ . }}</th>
-            {{ end }}
-          </tr>
-        </thead>
-        <tbody>
-          {{ if .Targets }}
-          {{ range .Targets }}
-          <tr class="app-table-row app-target-row app-target-row-{{ .Target.Status }}"
-            data-row-href="/kong-targets/{{ .Target.ID }}/edit">
-            <td>
-              <div class="app-cell-primary">
-                <span class="fw-semibold">{{ .Target.Name }}</span>
-                <span class="app-cell-meta">{{ .Target.Environment }}{{ if .Target.AdminURL }} · {{ .Target.AdminURL
-                  }}{{ end }}</span>
-              </div>
-            </td>
-            <td>
-              <div class="app-cell-primary">
-                <span class="app-status-line">
-                  <span class="app-status-dot app-status-dot-{{ statusClass .Target.Status }}"></span>
-                  <span>{{ .StatusLabel }}</span>
-                </span>
-                <span class="app-cell-meta">{{ .AuthLabel }}{{ if .Target.AuthHeaderName }} · {{ .Target.AuthHeaderName
-                  }}{{ end }}</span>
-              </div>
-            </td>
-            <td>
-              <span class="app-cell-meta">{{ .LastChecked }}</span>
-            </td>
-            <td class="text-end app-row-actions-cell" onclick="event.stopPropagation()">
-              <div class="app-row-actions">
-                <form method="post" action="/kong-targets/{{ .Target.ID }}/test"
-                  data-confirm="Run a connectivity test against this Kong Admin API target?">
-                  <button class="app-row-btn" type="submit">Test</button>
-                </form>
-                <a class="app-row-btn" href="/kong-targets/{{ .Target.ID }}/edit">Edit</a>
-                <form method="post" action="/kong-targets/{{ .Target.ID }}/delete"
-                  data-confirm="Delete this Kong target and remove its certificate links?">
-                  <button class="app-row-btn app-row-btn-danger" type="submit">Delete</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-          {{ end }}
-          {{ else }}
-          <tr>
-            <td colspan="{{ len .Columns }}">
-              <div class="app-empty-state">
-                <span class="app-empty-icon"></span>
-                <div>
-                  <h3>{{ .EmptyTitle }}</h3>
-                  <p>{{ .EmptyText }}</p>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="container-xl">
+    <div class="row row-deck row-cards mb-3">
+      {{ range .Metrics }}
+      <div class="col-12 col-sm-4">
+        <div class="card card-sm">
+          <div class="card-body">
+            <div class="text-secondary text-uppercase fs-5 fw-medium">{{ .Label }}</div>
+            <div class="display-6 text-{{ .Tone }} fw-bold">{{ .Value }}</div>
+          </div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Target inventory</h3>
+          <div class="text-secondary">Admin API endpoints grouped by environment, health state, and auth mode.</div>
+        </div>
+        <div class="card-actions text-secondary">{{ len .Targets }} / {{ .TotalCount }} records</div>
+      </div>
+      <div class="table-responsive">
+        <table class="table card-table table-vcenter align-middle mb-0">
+          <thead>
+            <tr>
+              {{ range .Columns }}
+              <th scope="col">{{ . }}</th>
+              {{ end }}
+            </tr>
+          </thead>
+          <tbody>
+            {{ if .Targets }}
+            {{ range .Targets }}
+            <tr class="app-row" data-row-href="/kong-targets/{{ .Target.ID }}/edit">
+              <td>
+                <div class="fw-semibold">{{ .Target.Name }}</div>
+                <div class="text-secondary">{{ .Target.Environment }}{{ if .Target.AdminURL }} · {{ .Target.AdminURL
+                  }}{{ end }}</div>
+              </td>
+              <td>
+                <div class="d-grid gap-1">
+                  <span class="app-status-line">
+                    <span class="app-status-dot app-status-dot-{{ statusClass .Target.Status }}"></span>
+                    <span>{{ .StatusLabel }}</span>
+                  </span>
+                  <span class="text-secondary">{{ .AuthLabel }}{{ if .Target.AuthHeaderName }} · {{
+                    .Target.AuthHeaderName }}{{ end }}</span>
                 </div>
-              </div>
-            </td>
-          </tr>
-          {{ end }}
-        </tbody>
-      </table>
+              </td>
+              <td>
+                <span class="text-secondary">{{ .LastChecked }}</span>
+              </td>
+              <td class="text-end" onclick="event.stopPropagation()">
+                <div class="btn-list justify-content-end">
+                  <form method="post" action="/kong-targets/{{ .Target.ID }}/test"
+                    data-confirm="Run a connectivity test against this Kong Admin API target?">
+                    <button class="btn btn-outline-secondary btn-sm" type="submit">Test</button>
+                  </form>
+                  <a class="btn btn-outline-secondary btn-sm" href="/kong-targets/{{ .Target.ID }}/edit">Edit</a>
+                  <form method="post" action="/kong-targets/{{ .Target.ID }}/delete"
+                    data-confirm="Delete this Kong target and remove its certificate links?">
+                    <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {{ end }}
+            {{ else }}
+            <tr>
+              <td colspan="{{ len .Columns }}">
+                <div class="app-empty-state">
+                  <div class="empty">
+                    <div class="empty-title">{{ .EmptyTitle }}</div>
+                    <p class="empty-subtitle text-secondary">{{ .EmptyText }}</p>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </section>
+  </div>
 </div>
 {{ end }}

@@ -12,10 +12,9 @@ import (
 	"kong-cert-lite/internal/usecase"
 )
 
-//go:embed static/*
-//go:embed static/bootstrap/*
 //go:embed static/css/*
 //go:embed static/js/*
+//go:embed static/tabler/*
 var staticFiles embed.FS
 
 func NewApp(logger *slog.Logger, certificates *usecase.CertificateUseCase, acme *usecase.ACMEUseCase, kongSync *usecase.KongSyncUseCase, kongTargets *usecase.KongTargetUseCase, jobs *usecase.JobUseCase) *fiber.App {

@@ -1,97 +1,105 @@
 {{ define "content" }}
-<div class="container-fluid app-content">
-    <header class="app-page-header">
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Workspace</div>
+        <h2 class="page-title">{{ .Heading }}</h2>
+        <div class="text-secondary">{{ .Description }}</div>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <a class="btn btn-success" href="/certificates/new">{{ .PrimaryAction }}</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="container-xl">
+    <div class="row row-deck row-cards mb-3">
+      {{ range .Metrics }}
+      <div class="col-12 col-sm-4">
+        <div class="card card-sm">
+          <div class="card-body">
+            <div class="text-secondary text-uppercase fs-5 fw-medium">{{ .Label }}</div>
+            <div class="display-6 text-{{ .Tone }} fw-bold">{{ .Value }}</div>
+          </div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
         <div>
-            <h1 class="app-page-title">{{ .Heading }}</h1>
-            <p class="app-page-description">{{ .Description }}</p>
+          <h3 class="card-title">Certificate inventory</h3>
+          <div class="text-secondary">Certificate records ready for ACME issue, renewal, and Kong sync</div>
         </div>
-        <a class="btn btn-primary" href="/certificates/new">{{ .PrimaryAction }}</a>
-    </header>
-
-    <section class="app-metrics" aria-label="Summary">
-        {{ range .Metrics }}
-        <div class="app-metric">
-            <span class="app-metric-label">{{ .Label }}</span>
-            <span class="app-metric-value text-{{ .Tone }}">{{ .Value }}</span>
-        </div>
-        {{ end }}
-    </section>
-
-    <section class="app-panel" data-list-panel>
-        <div class="app-panel-header">
-            <div>
-                <h2 class="app-panel-title">Certificate inventory</h2>
-                <p class="app-panel-subtitle">Certificate records ready for ACME issue, renewal, and Kong sync</p>
-            </div>
-            <span class="badge text-bg-secondary">{{ len .Certificates }} / {{ .TotalCount }} records</span>
-        </div>
-        <div class="table-responsive">
-            <table class="table app-table align-middle mb-0">
-                <thead>
-                    <tr>
-                        {{ range .Columns }}
-                        <th scope="col">{{ . }}</th>
-                        {{ end }}
-                    </tr>
-                </thead>
-                <tbody>
-                    {{ if .Certificates }}
-                    {{ range .Certificates }}
-                    <tr class="app-table-row app-certificate-row app-certificate-row-{{ .Certificate.Status }}"
-                        data-row-href="/certificates/{{ .Certificate.ID }}">
-                        <td>
-                            <div class="app-cell-primary">
-                                <span class="fw-semibold">{{ .Certificate.PrimaryDomain }}</span>
-                                <span class="app-cell-meta">{{ .Certificate.Name }} · {{ .Type }} · {{ len
-                                    .Certificate.Domains }} domains</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="app-cell-primary">
-                                <span class="app-status-line">
-                                    <span
-                                        class="app-status-dot app-status-dot-{{ statusClass .Certificate.Status }}"></span>
-                                    <span>{{ .StatusLabel }}</span>
-                                </span>
-                                <span class="app-cell-meta">{{ if .Expires }}Expires {{ .Expires }}{{ if .Remaining }} ·
-                                    {{ .Remaining }}{{ end }}{{ else }}—{{ end }}</span>
-                            </div>
-                        </td>
-                        <td>
-                            {{ if gt .LinkedTargetCount 0 }}
-                            <span class="badge text-bg-primary">{{ .LinkedTargetCount }} linked</span>
-                            {{ else }}
-                            <span class="app-cell-meta">—</span>
-                            {{ end }}
-                        </td>
-                        <td class="text-end app-row-actions-cell" onclick="event.stopPropagation()">
-                            <div class="app-row-actions">
-                                <a class="app-row-btn" href="/certificates/{{ .Certificate.ID }}">Detail</a>
-                                <a class="app-row-btn" href="/certificates/{{ .Certificate.ID }}/edit">Edit</a>
-                                <form method="post" action="/certificates/{{ .Certificate.ID }}/delete"
-                                    data-confirm="Delete this certificate metadata and linked target mappings?">
-                                    <button class="app-row-btn app-row-btn-danger" type="submit">Delete</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {{ end }}
-                    {{ else }}
-                    <tr>
-                        <td colspan="{{ len .Columns }}">
-                            <div class="app-empty-state">
-                                <span class="app-empty-icon"></span>
-                                <div>
-                                    <h3>{{ .EmptyTitle }}</h3>
-                                    <p>{{ .EmptyText }}</p>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {{ end }}
-                </tbody>
-            </table>
-        </div>
-    </section>
+        <div class="card-actions text-secondary">{{ len .Certificates }} / {{ .TotalCount }} records</div>
+      </div>
+      <div class="table-responsive">
+        <table class="table card-table table-vcenter align-middle mb-0">
+          <thead>
+            <tr>
+              {{ range .Columns }}
+              <th scope="col">{{ . }}</th>
+              {{ end }}
+            </tr>
+          </thead>
+          <tbody>
+            {{ if .Certificates }}
+            {{ range .Certificates }}
+            <tr class="app-row" data-row-href="/certificates/{{ .Certificate.ID }}">
+              <td>
+                <div class="fw-semibold">{{ .Certificate.PrimaryDomain }}</div>
+                <div class="text-secondary">{{ .Certificate.Name }} · {{ .Type }} · {{ len .Certificate.Domains }}
+                  domains</div>
+              </td>
+              <td>
+                <div class="d-grid gap-1">
+                  <span class="app-status-line">
+                    <span class="app-status-dot app-status-dot-{{ statusClass .Certificate.Status }}"></span>
+                    <span>{{ .StatusLabel }}</span>
+                  </span>
+                  <span class="text-secondary">{{ if .Expires }}Expires {{ .Expires }}{{ if .Remaining }} · {{
+                    .Remaining }}{{ end }}{{ else }}—{{ end }}</span>
+                </div>
+              </td>
+              <td>
+                {{ if gt .LinkedTargetCount 0 }}
+                <span class="badge bg-success-lt text-success">{{ .LinkedTargetCount }} linked</span>
+                {{ else }}
+                <span class="text-secondary">—</span>
+                {{ end }}
+              </td>
+              <td class="text-end" onclick="event.stopPropagation()">
+                <div class="btn-list justify-content-end">
+                  <a class="btn btn-outline-secondary btn-sm" href="/certificates/{{ .Certificate.ID }}">Detail</a>
+                  <a class="btn btn-outline-secondary btn-sm" href="/certificates/{{ .Certificate.ID }}/edit">Edit</a>
+                  <form method="post" action="/certificates/{{ .Certificate.ID }}/delete"
+                    data-confirm="Delete this certificate metadata and linked target mappings?">
+                    <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {{ end }}
+            {{ else }}
+            <tr>
+              <td colspan="{{ len .Columns }}">
+                <div class="app-empty-state">
+                  <div class="empty">
+                    <div class="empty-title">{{ .EmptyTitle }}</div>
+                    <p class="empty-subtitle text-secondary">{{ .EmptyText }}</p>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 {{ end }}

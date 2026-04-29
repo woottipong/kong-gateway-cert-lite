@@ -6,7 +6,7 @@
 
 The application issues and renews Let's Encrypt certificates, stores certificate metadata in SQLite, stores certificate files on a local volume, and syncs certificates plus SNI values into one or more Kong Gateway targets through the Kong Admin API.
 
-The product is intended to run as a single Go binary in one Docker container. The HTTP adapter uses Go Fiber. The UI is server-rendered HTML styled with Bootstrap 5 and a modern premium minimal light-first design direction.
+The product is intended to run as a single Go binary in one Docker container. The HTTP adapter uses Go Fiber. The UI is server-rendered HTML styled with Tabler, compiled Bootstrap 5 assets, and a modern premium minimal light-first design direction.
 
 ## Goals
 
@@ -41,7 +41,7 @@ ACME Client:     lego
 DNS Challenge:   Cloudflare DNS-01
 HTTP Adapter:    Go Fiber
 Web UI:          Server-rendered HTML
-UI Framework:    Bootstrap 5
+UI Framework:    Tabler (Bootstrap 5-based)
 Design System:   Light-first premium minimal
 Interactivity:   HTMX or small JavaScript only when needed
 Scheduler:       Internal cron scheduler
@@ -252,7 +252,7 @@ User starts sync
 - The first supported DNS provider is Cloudflare only.
 - Cloudflare API token is provided through `CF_DNS_API_TOKEN`.
 - Kong Admin API is reachable from the app over a private network.
-- Bootstrap 5 assets are served locally by the Go app or embedded in the binary.
+- Tabler and Bootstrap 5 assets are served locally by the Go app or embedded in the binary.
 - The UI is light-first with no theme toggle in the MVP.
 - MVP can start with simple POST forms for state-changing actions.
 - SQLite is sufficient for MVP scale.
