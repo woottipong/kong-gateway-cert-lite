@@ -636,9 +636,10 @@ func (h *Handler) renderKongTargetForm(c *fiber.Ctx, status int, form usecase.Ko
 
 func (h *Handler) render(c *fiber.Ctx, status int, contentTemplate string, data any) error {
 	tmpl, err := template.New("layout.html").Funcs(template.FuncMap{
-		"fieldError":  fieldError,
-		"statusClass": statusClass,
-		"join":        strings.Join,
+		"fieldError":   fieldError,
+		"jobTypeClass": jobTypeClass,
+		"statusClass":  statusClass,
+		"join":         strings.Join,
 	}).ParseFS(templateFiles, "templates/layout.html", contentTemplate)
 	if err != nil {
 		h.logger.Error("parse templates", "error", err)
@@ -772,6 +773,23 @@ func statusClass(status any) string {
 	case "warning", "running":
 		return "warning"
 	case "expired", "failed", "offline":
+		return "danger"
+	default:
+		return "secondary"
+	}
+}
+
+func jobTypeClass(jobType any) string {
+	switch strings.ToLower(strings.TrimSpace(statusString(jobType))) {
+	case "issue":
+		return "azure"
+	case "renew":
+		return "cyan"
+	case "sync":
+		return "success"
+	case "test_kong":
+		return "purple"
+	case "delete":
 		return "danger"
 	default:
 		return "secondary"

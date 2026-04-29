@@ -156,9 +156,16 @@ func TestCreateCertificateAndRenderDetail(t *testing.T) {
 		"Production wildcard",
 		"action=\"/certificates/1/delete\"",
 		">Delete<",
+		`class="table table-hover card-table table-vcenter align-middle mb-0"`,
+		`class="badge bg-secondary-lt text-secondary me-auto">Pending<`,
 	} {
 		if !strings.Contains(listBody, want) {
 			t.Fatalf("expected list body to contain %q", want)
+		}
+	}
+	for _, unwanted := range []string{"app-status-line", "app-status-dot", "app-target-count", "app-empty-state", "app-row"} {
+		if strings.Contains(listBody, unwanted) {
+			t.Fatalf("expected certificates list to omit legacy custom class %q", unwanted)
 		}
 	}
 }
@@ -748,9 +755,16 @@ func TestCreateKongTargetAndRenderList(t *testing.T) {
 		"Unknown",
 		"action=\"/kong-targets/1/delete\"",
 		">Delete<",
+		`class="table table-hover card-table table-vcenter align-middle mb-0"`,
+		`class="badge bg-secondary-lt text-secondary me-auto">Unknown<`,
 	} {
 		if !strings.Contains(listBody, want) {
 			t.Fatalf("expected list body to contain %q", want)
+		}
+	}
+	for _, unwanted := range []string{"app-status-line", "app-status-dot", "app-empty-state", "app-row"} {
+		if strings.Contains(listBody, unwanted) {
+			t.Fatalf("expected kong targets list to omit legacy custom class %q", unwanted)
 		}
 	}
 	if strings.Contains(listBody, "super-secret-token") {
@@ -1479,6 +1493,9 @@ func TestJobsListOrdersLatestFirstAndRendersEmptyState(t *testing.T) {
 	if !strings.Contains(emptyBody, "No jobs") {
 		t.Fatal("expected empty list body to contain useful empty state")
 	}
+	if !strings.Contains(emptyBody, `class="empty m-0 w-100"`) {
+		t.Fatal("expected empty list body to use Tabler empty state markup")
+	}
 
 	_, err := database.Exec(`
 		INSERT INTO jobs (type, status, message, log, started_at, finished_at)
@@ -1498,6 +1515,20 @@ func TestJobsListOrdersLatestFirstAndRendersEmptyState(t *testing.T) {
 	for _, want := range []string{"Testing Kong target", "Renew failed", "Old sync complete", "Test Kong", "Running", "Failed", "Success"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("expected jobs body to contain %q", want)
+		}
+	}
+	for _, want := range []string{
+		`class="table table-hover card-table table-vcenter align-middle mb-0"`,
+		`class="badge bg-purple-lt text-purple text-uppercase">Test Kong<`,
+		`class="badge bg-warning-lt text-warning me-auto">Running<`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected jobs body to contain %q", want)
+		}
+	}
+	for _, unwanted := range []string{"app-log-type", "app-log-table", "app-log-detail", "app-log-msg"} {
+		if strings.Contains(body, unwanted) {
+			t.Fatalf("expected jobs body to omit legacy custom class %q", unwanted)
 		}
 	}
 	first := strings.Index(body, "Testing Kong target")
@@ -1612,6 +1643,20 @@ func TestJobDetailRendersStatusTimingMessageAndLogs(t *testing.T) {
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("expected detail body to contain %q", want)
+		}
+	}
+	for _, want := range []string{
+		`class="badge bg-success-lt text-success text-uppercase">Sync<`,
+		`class="badge bg-danger-lt text-danger">Failed<`,
+		`class="bg-body-secondary border rounded p-3 mb-0 font-monospace small text-body overflow-auto"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected detail body to contain %q", want)
+		}
+	}
+	for _, unwanted := range []string{"app-log-type", "app-log-block", "app-empty-state"} {
+		if strings.Contains(body, unwanted) {
+			t.Fatalf("expected job detail to omit legacy custom class %q", unwanted)
 		}
 	}
 }

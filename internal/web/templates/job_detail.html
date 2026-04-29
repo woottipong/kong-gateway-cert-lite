@@ -29,35 +29,38 @@
             <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
               <div>
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                  <span class="app-log-type app-log-type-{{ .Job.Job.Type }}">{{ .Job.TypeLabel }}</span>
-                  <span class="badge bg-{{ statusClass .Job.Job.Status }}-lt text-{{ statusClass .Job.Job.Status }}">{{ .Job.StatusLabel }}</span>
+                  <span
+                    class="badge bg-{{ jobTypeClass .Job.Job.Type }}-lt text-{{ jobTypeClass .Job.Job.Type }} text-uppercase">{{
+                    .Job.TypeLabel }}</span>
+                  <span class="badge bg-{{ statusClass .Job.Job.Status }}-lt text-{{ statusClass .Job.Job.Status }}">{{
+                    .Job.StatusLabel }}</span>
                 </div>
-                <div class="text-secondary">Started {{ .Job.StartedAt }}</div>
+                <div class="text-secondary small font-monospace">Started {{ .Job.StartedAt }}</div>
               </div>
               <div class="text-lg-end">
-                <div class="text-secondary text-uppercase fs-5 fw-medium">Finished</div>
+                <div class="subheader">Finished</div>
                 <div class="fw-semibold">{{ .Job.FinishedAt }}</div>
               </div>
             </div>
 
-            <dl class="app-config-strip">
-              <div>
-                <dt>Certificate</dt>
-                <dd>{{ .Job.CertificateLabel }}</dd>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <div class="subheader">Certificate</div>
+                <div>{{ .Job.CertificateLabel }}</div>
               </div>
-              <div>
-                <dt>Kong target</dt>
-                <dd>{{ .Job.KongTargetLabel }}</dd>
+              <div class="col-sm-6">
+                <div class="subheader">Kong target</div>
+                <div>{{ .Job.KongTargetLabel }}</div>
               </div>
-              <div>
-                <dt>Message</dt>
-                <dd>{{ if .Job.Job.Message }}{{ .Job.Job.Message }}{{ else }}—{{ end }}</dd>
+              <div class="col-sm-6">
+                <div class="subheader">Message</div>
+                <div>{{ if .Job.Job.Message }}{{ .Job.Job.Message }}{{ else }}—{{ end }}</div>
               </div>
-              <div>
-                <dt>Run ID</dt>
-                <dd>#{{ .Job.Job.ID }}</dd>
+              <div class="col-sm-6">
+                <div class="subheader">Run ID</div>
+                <div>#{{ .Job.Job.ID }}</div>
               </div>
-            </dl>
+            </div>
           </div>
         </section>
       </div>
@@ -71,13 +74,12 @@
           </div>
           <div class="card-body">
             {{ if .Job.Job.Log }}
-            <pre class="app-log-block">{{ .Job.Job.Log }}</pre>
+            <pre
+              class="bg-body-secondary border rounded p-3 mb-0 font-monospace small text-body overflow-auto">{{ .Job.Job.Log }}</pre>
             {{ else }}
-            <div class="app-empty-state">
-              <div class="empty">
-                <div class="empty-title">No log output</div>
-                <p class="empty-subtitle text-secondary">This job has no captured log lines.</p>
-              </div>
+            <div class="empty m-0 w-100">
+              <div class="empty-title">No log output</div>
+              <p class="empty-subtitle text-secondary">This job has no captured log lines.</p>
             </div>
             {{ end }}
           </div>

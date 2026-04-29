@@ -25,7 +25,7 @@
         <div class="card-actions text-secondary">{{ len .Jobs }} of {{ .TotalCount }} records</div>
       </div>
       <div class="table-responsive">
-        <table class="table card-table table-vcenter align-middle mb-0 app-log-table">
+        <table class="table table-hover card-table table-vcenter align-middle mb-0">
           <thead>
             <tr>
               {{ range .Columns }}
@@ -36,14 +36,16 @@
           <tbody>
             {{ if .Jobs }}
             {{ range .Jobs }}
-            <tr class="app-row" data-row-href="/jobs/{{ .Job.ID }}">
+            <tr data-row-href="/jobs/{{ .Job.ID }}">
               <td>
                 <div class="d-grid gap-1">
-                  <span class="app-log-type app-log-type-{{ .Job.Type }}">{{ .TypeLabel }}</span>
-                  <span class="app-log-time text-secondary">{{ .StartedAt }}</span>
+                  <span
+                    class="badge bg-{{ jobTypeClass .Job.Type }}-lt text-{{ jobTypeClass .Job.Type }} text-uppercase">{{
+                    .TypeLabel }}</span>
+                  <span class="text-secondary text-nowrap font-monospace small">{{ .StartedAt }}</span>
                 </div>
               </td>
-              <td class="app-log-detail">
+              <td>
                 <div class="d-grid gap-1">
                   {{ if .Job.CertificateID }}<a class="fw-semibold" href="/certificates/{{ .Job.CertificateID }}"
                     onclick="event.stopPropagation()">{{ .CertificateLabel }}</a>{{ end }}
@@ -52,15 +54,13 @@
                   end }}
                 </div>
               </td>
-              <td class="app-log-detail">
+              <td>
                 <div class="d-grid gap-1">
-                  <span class="app-status-line">
-                    <span class="app-status-dot app-status-dot-{{ statusClass .Job.Status }}"></span>
-                    <span>{{ .StatusLabel }}</span>
-                  </span>
+                  <span class="badge bg-{{ statusClass .Job.Status }}-lt text-{{ statusClass .Job.Status }} me-auto">{{
+                    .StatusLabel }}</span>
                   <span class="small text-secondary">Finished: {{ .FinishedAt }}</span>
                 </div>
-                {{ if .Job.Message }}<div class="text-secondary app-log-msg">{{ .Job.Message }}</div>{{ end }}
+                {{ if .Job.Message }}<div class="text-secondary text-truncate mt-1">{{ .Job.Message }}</div>{{ end }}
               </td>
               <td class="text-end" onclick="event.stopPropagation()">
                 <a class="btn btn-outline-secondary btn-sm" href="/jobs/{{ .Job.ID }}">Log</a>
@@ -70,11 +70,9 @@
             {{ else }}
             <tr>
               <td colspan="{{ len .Columns }}">
-                <div class="app-empty-state">
-                  <div class="empty">
-                    <div class="empty-title">{{ .EmptyTitle }}</div>
-                    <p class="empty-subtitle text-secondary">{{ .EmptyText }}</p>
-                  </div>
+                <div class="empty m-0 w-100">
+                  <div class="empty-title">{{ .EmptyTitle }}</div>
+                  <p class="empty-subtitle text-secondary">{{ .EmptyText }}</p>
                 </div>
               </td>
             </tr>
