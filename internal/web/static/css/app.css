@@ -1,4 +1,4 @@
-:root {
+ฝ:root {
   color-scheme: light;
   --tblr-primary: #1db954;
   --tblr-primary-rgb: 29, 185, 84;
@@ -87,12 +87,113 @@ a {
   color: #15803d;
 }
 
-.app-flash {
-  margin-bottom: 0;
-}
-
 .app-row {
   cursor: pointer;
+}
+
+.app-row:hover {
+  background: rgba(29, 185, 84, 0.035);
+}
+
+.app-target-count {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.app-toast-region {
+  max-width: min(24rem, calc(100vw - 2rem));
+  pointer-events: none;
+  position: fixed;
+  right: 1rem;
+  top: 1rem;
+  width: 100%;
+  z-index: 1080;
+}
+
+.app-toast {
+  align-items: flex-start;
+  animation: app-toast-enter 180ms ease-out;
+  background: var(--tblr-bg-surface);
+  border: 1px solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius-lg);
+  box-shadow: 0 1rem 2rem rgba(15, 23, 42, 0.16);
+  display: flex;
+  gap: 0.75rem;
+  overflow: hidden;
+  padding: 0.85rem 0.9rem;
+  pointer-events: auto;
+}
+
+.app-toast.is-hiding {
+  animation: app-toast-exit 140ms ease-in forwards;
+}
+
+.app-toast-marker {
+  background: var(--tblr-primary);
+  border-radius: 999px;
+  flex: 0 0 auto;
+  height: 2.25rem;
+  width: 0.25rem;
+}
+
+.app-toast-success .app-toast-marker {
+  background: #1db954;
+}
+
+.app-toast-danger .app-toast-marker {
+  background: var(--tblr-danger);
+}
+
+.app-toast-warning .app-toast-marker {
+  background: var(--tblr-warning);
+}
+
+.app-toast-copy {
+  min-width: 0;
+}
+
+.app-toast-title {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.app-toast-message {
+  color: var(--tblr-secondary-color);
+  margin-top: 0.15rem;
+  overflow-wrap: anywhere;
+}
+
+.app-toast-close {
+  flex: 0 0 auto;
+  margin-left: auto;
+  margin-top: 0.05rem;
+}
+
+@keyframes app-toast-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0.75rem, -0.25rem, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes app-toast-exit {
+  to {
+    opacity: 0;
+    transform: translate3d(0.75rem, -0.25rem, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .app-toast,
+  .app-toast.is-hiding {
+    animation: none;
+  }
 }
 
 .app-status-line {
@@ -142,6 +243,7 @@ a {
   display: inline-flex;
   font-size: 0.6875rem;
   font-weight: 700;
+  justify-self: start;
   letter-spacing: 0.06em;
   padding: 0.2rem 0.55rem;
   text-transform: uppercase;
@@ -268,49 +370,161 @@ a {
   min-width: 0;
 }
 
-.app-form-checklist {
+.app-config-strip {
+  border-top: 1px solid var(--tblr-border-color);
   display: grid;
-  gap: 0.85rem;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  margin: 0;
+  padding-top: 1rem;
+}
+
+.app-config-strip div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.app-config-strip dt {
+  color: var(--tblr-secondary-color);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.app-config-strip dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.app-coverage-grid {
+  border-top: 1px solid var(--tblr-border-color);
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.app-coverage-block {
+  min-width: 0;
+}
+
+.app-detail-note {
+  align-items: center;
+  border-top: 1px solid var(--tblr-border-color);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding-top: 1rem;
+}
+
+.app-workflow-list {
+  display: grid;
+  gap: 0;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.app-form-checklist-item {
-  align-items: start;
+.app-workflow-list li {
   display: grid;
+  gap: 0.85rem;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  padding: 0 0 1.35rem;
+  position: relative;
+}
+
+.app-workflow-list li:last-child {
+  padding-bottom: 0;
+}
+
+.app-workflow-list li:not(:last-child)::after {
+  background: var(--tblr-border-color);
+  bottom: 0.15rem;
+  content: "";
+  left: 0.95rem;
+  position: absolute;
+  top: 2.25rem;
+  width: 1px;
+}
+
+.app-workflow-list-compact li {
   gap: 0.75rem;
   grid-template-columns: 1.75rem minmax(0, 1fr);
+  padding-bottom: 1.1rem;
 }
 
-.app-form-checklist-item.is-done {
-  color: var(--tblr-secondary-color);
+.app-workflow-list-compact li:not(:last-child)::after {
+  left: 0.825rem;
+  top: 2rem;
 }
 
-.app-form-checklist-marker {
+.app-workflow-index {
   align-items: center;
   background: var(--tblr-tertiary-bg);
   border: 1px solid var(--tblr-border-color);
-  border-radius: 0.5rem;
+  border-radius: 999px;
   color: var(--tblr-secondary-color);
   display: inline-flex;
-  font-size: 0.8125rem;
   font-weight: 700;
-  height: 1.75rem;
+  height: 2rem;
   justify-content: center;
+  position: relative;
+  width: 2rem;
+  z-index: 1;
+}
+
+.app-workflow-list-compact .app-workflow-index {
+  font-size: 0.8125rem;
+  height: 1.75rem;
   width: 1.75rem;
 }
 
-.app-form-checklist-item.is-done .app-form-checklist-marker {
+.app-workflow-list li.is-complete .app-workflow-index {
   background: rgba(29, 185, 84, 0.12);
-  border-color: rgba(29, 185, 84, 0.2);
+  border-color: rgba(29, 185, 84, 0.28);
   color: #15803d;
 }
 
-.app-form-checklist-item.is-current .app-form-checklist-marker {
+.app-workflow-list li.is-current .app-workflow-index {
   background: #1db954;
   border-color: #1db954;
   color: #ffffff;
+}
+
+.app-workflow-list li.is-ready .app-workflow-index {
+  background: rgba(29, 185, 84, 0.08);
+  border-color: rgba(29, 185, 84, 0.24);
+  color: #15803d;
+}
+
+.app-workflow-list li.is-locked .app-workflow-index {
+  background: var(--tblr-tertiary-bg);
+  color: var(--tblr-secondary-color);
+}
+
+.app-workflow-copy {
+  min-width: 0;
+}
+
+.app-workflow-heading {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.app-workflow-heading .badge {
+  font-size: 0.6875rem;
+}
+
+.app-workflow-copy p {
+  color: var(--tblr-secondary-color);
+  margin: 0.25rem 0 0.75rem;
 }
 
 .app-form-checklist-action {
@@ -409,5 +623,18 @@ a {
 @media (max-width: 991.98px) {
   .app-sidebar {
     border-bottom: 1px solid var(--tblr-border-color);
+  }
+}
+
+@media (max-width: 575.98px) {
+
+  .app-config-strip,
+  .app-coverage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-detail-note {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

@@ -228,6 +228,42 @@
 })();
 
 (function () {
+  function initFlashToast() {
+    var toast = document.querySelector("[data-flash-toast]");
+    if (!toast) return;
+
+    var dismissed = false;
+    var dismissButton = toast.querySelector("[data-flash-dismiss]");
+
+    function dismiss() {
+      if (dismissed) return;
+      dismissed = true;
+      toast.classList.add("is-hiding");
+      window.setTimeout(function () {
+        var region = toast.closest(".app-toast-region");
+        if (region) {
+          region.remove();
+          return;
+        }
+        toast.remove();
+      }, 180);
+    }
+
+    if (dismissButton) {
+      dismissButton.addEventListener("click", dismiss);
+    }
+
+    window.setTimeout(dismiss, 4500);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initFlashToast);
+  } else {
+    initFlashToast();
+  }
+})();
+
+(function () {
   function initTagInputs() {
     document.querySelectorAll("[data-tag-for]").forEach(function (container) {
       var name = container.dataset.tagFor;

@@ -44,7 +44,6 @@ func NewApp(logger *slog.Logger, certificates *usecase.CertificateUseCase, acme 
 	app.Post("/kong-targets/:id/test", handler.TestKongTarget)
 	app.Get("/jobs", handler.Jobs)
 	app.Get("/jobs/:id", handler.JobDetail)
-	app.Get("/settings", handler.Settings)
 
 	staticFS, err := fs.Sub(staticFiles, "static")
 	if err != nil {

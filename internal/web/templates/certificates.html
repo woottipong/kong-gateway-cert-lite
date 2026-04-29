@@ -3,9 +3,10 @@
   <div class="container-xl">
     <div class="row g-2 align-items-center">
       <div class="col">
-        <div class="page-pretitle">Workspace</div>
         <h2 class="page-title">{{ .Heading }}</h2>
+        {{ if .Description }}
         <div class="text-secondary">{{ .Description }}</div>
+        {{ end }}
       </div>
       <div class="col-auto ms-auto d-print-none">
         <a class="btn btn-success" href="/certificates/new">{{ .PrimaryAction }}</a>
@@ -16,26 +17,12 @@
 
 <div class="page-body">
   <div class="container-xl">
-    <div class="row row-deck row-cards mb-3">
-      {{ range .Metrics }}
-      <div class="col-12 col-sm-4">
-        <div class="card card-sm">
-          <div class="card-body">
-            <div class="text-secondary text-uppercase fs-5 fw-medium">{{ .Label }}</div>
-            <div class="display-6 text-{{ .Tone }} fw-bold">{{ .Value }}</div>
-          </div>
-        </div>
-      </div>
-      {{ end }}
-    </div>
-
-    <div class="card">
+    <section class="card">
       <div class="card-header">
         <div>
           <h3 class="card-title">Certificate inventory</h3>
-          <div class="text-secondary">Certificate records ready for ACME issue, renewal, and Kong sync</div>
         </div>
-        <div class="card-actions text-secondary">{{ len .Certificates }} / {{ .TotalCount }} records</div>
+        <div class="card-actions text-secondary">{{ len .Certificates }} of {{ .TotalCount }} records</div>
       </div>
       <div class="table-responsive">
         <table class="table card-table table-vcenter align-middle mb-0">
@@ -52,8 +39,9 @@
             <tr class="app-row" data-row-href="/certificates/{{ .Certificate.ID }}">
               <td>
                 <div class="fw-semibold">{{ .Certificate.PrimaryDomain }}</div>
-                <div class="text-secondary">{{ .Certificate.Name }} · {{ .Type }} · {{ len .Certificate.Domains }}
-                  domains</div>
+                <div class="text-secondary">{{ .Certificate.Name }} · {{ .Type }}</div>
+                <div class="text-secondary small">{{ len .Certificate.Domains }} domains · {{ len .Certificate.SNIs }}
+                  SNI</div>
               </td>
               <td>
                 <div class="d-grid gap-1">
@@ -67,7 +55,7 @@
               </td>
               <td>
                 {{ if gt .LinkedTargetCount 0 }}
-                <span class="badge bg-success-lt text-success">{{ .LinkedTargetCount }} linked</span>
+                <span class="app-target-count">{{ .LinkedTargetCount }} linked</span>
                 {{ else }}
                 <span class="text-secondary">—</span>
                 {{ end }}
@@ -99,7 +87,7 @@
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   </div>
 </div>
 {{ end }}

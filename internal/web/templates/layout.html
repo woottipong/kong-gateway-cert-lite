@@ -31,8 +31,7 @@
               <a class="nav-link {{ .NavCertificatesClass }}" href="/certificates">
                 <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
                   <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M5 3h7l5 5v13H5z"></path>
                     <path d="M12 3v5h5"></path>
                     <path d="M8 13h8"></path>
@@ -46,8 +45,7 @@
               <a class="nav-link {{ .NavKongTargetsClass }}" href="/kong-targets">
                 <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
                   <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M4 7h16"></path>
                     <path d="M4 12h16"></path>
                     <path d="M4 17h16"></path>
@@ -62,30 +60,12 @@
               <a class="nav-link {{ .NavJobsClass }}" href="/jobs">
                 <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
                   <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 7v5l3 3"></path>
                     <circle cx="12" cy="12" r="9"></circle>
                   </svg>
                 </span>
                 <span class="nav-link-title">Jobs / Logs</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {{ .NavSettingsClass }}" href="/settings">
-                <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path d="M4 6h16"></path>
-                    <path d="M4 12h10"></path>
-                    <path d="M4 18h16"></path>
-                    <path d="M9 6v0"></path>
-                    <path d="M14 12v0"></path>
-                    <path d="M18 18v0"></path>
-                  </svg>
-                </span>
-                <span class="nav-link-title">Settings</span>
               </a>
             </li>
           </ul>
@@ -95,9 +75,18 @@
 
     <div class="page-wrapper">
       {{ with .Flash }}
-      <div class="container-xl pt-3">
-        <div class="alert alert-{{ .Tone }} app-flash" role="status">
-          <div>{{ .Message }}</div>
+      <div class="app-toast-region" aria-live="polite" aria-atomic="true">
+        <div class="app-toast app-toast-{{ .Tone }}" role="status" data-flash-toast>
+          <span class="app-toast-marker" aria-hidden="true"></span>
+          <div class="app-toast-copy">
+            <div class="app-toast-title">
+              {{ if eq .Tone "danger" }}Action failed{{ else if eq .Tone "warning" }}Review needed{{ else }}Saved{{ end
+              }}
+            </div>
+            <div class="app-toast-message">{{ .Message }}</div>
+          </div>
+          <button class="btn-close app-toast-close" type="button" aria-label="Dismiss notification"
+            data-flash-dismiss></button>
         </div>
       </div>
       {{ end }}

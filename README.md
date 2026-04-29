@@ -68,7 +68,6 @@ POST /kong-targets/:id/delete
 POST /kong-targets/:id/test
 GET  /jobs
 GET  /jobs/:id
-GET  /settings
 ```
 
 ## Configuration

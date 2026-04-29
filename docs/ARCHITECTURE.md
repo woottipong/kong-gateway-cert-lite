@@ -91,7 +91,6 @@ Server-rendered pages for:
 - Certificates list, detail, and form
 - Kong targets list and form
 - Jobs list and detail
-- Settings and system information
 
 Current implemented routes:
 
@@ -116,7 +115,6 @@ POST /kong-targets/:id/delete
 POST /kong-targets/:id/test
 GET  /jobs
 GET  /jobs/:id
-GET  /settings
 ```
 
 Status badge tones:

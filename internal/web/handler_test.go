@@ -3,6 +3,7 @@ package web
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -43,8 +44,7 @@ func TestPlaceholderPagesRenderLayout(t *testing.T) {
 		wantActive string
 	}{
 		{path: "/certificates", wantTitle: "Certificates", wantActive: "Certificates"},
-		{path: "/jobs", wantTitle: "Jobs / Logs", wantActive: "Jobs / Logs"},
-		{path: "/settings", wantTitle: "Settings", wantActive: "Settings"},
+		{path: "/jobs", wantTitle: "Jobs and logs", wantActive: "Jobs / Logs"},
 	}
 
 	for _, tt := range tests {
@@ -303,7 +303,7 @@ func TestEditCertificateRendersEditableDomainsAndSNIsBeforeIssue(t *testing.T) {
 		t.Fatalf("expected edit status 200, got %d", resp.StatusCode)
 	}
 	for _, want := range []string{
-		"Edit Certificate",
+		"Edit certificate",
 		"action=\"/certificates/1\"",
 		"Caption wildcard",
 		"ops@rtt.in.th",
@@ -404,7 +404,7 @@ func TestUpdateCertificateKeepsDomainsAndSNIsLockedAfterIssue(t *testing.T) {
 		t.Fatalf("expected edit status 200, got %d", editResp.StatusCode)
 	}
 	for _, want := range []string{
-		"Edit Certificate",
+		"Edit certificate",
 		"Domains are locked after the certificate has been issued.",
 		"SNI values are locked after the certificate has been issued.",
 		"disabled",
@@ -1505,6 +1505,43 @@ func TestJobsListOrdersLatestFirstAndRendersEmptyState(t *testing.T) {
 	third := strings.Index(body, "Old sync complete")
 	if first == -1 || second == -1 || third == -1 || !(first < second && second < third) {
 		t.Fatal("expected jobs to be ordered by latest first")
+	}
+}
+
+func TestJobsListShowsOnlyTwentyLatestItems(t *testing.T) {
+	database, app := testServer(t)
+
+	for i := 1; i <= 21; i++ {
+		startedAt := fmt.Sprintf("2026-04-%02d 10:00:00", i)
+		message := fmt.Sprintf("Job message %02d", i)
+		if _, err := database.Exec(`
+			INSERT INTO jobs (type, status, message, log, started_at, finished_at)
+			VALUES (?, ?, ?, ?, ?, ?)
+		`, "sync", "success", message, "job log", startedAt, startedAt); err != nil {
+			t.Fatalf("insert job %d: %v", i, err)
+		}
+	}
+
+	resp, body := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/jobs", nil))
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected list status 200, got %d", resp.StatusCode)
+	}
+	if !strings.Contains(body, "Job message 21") {
+		t.Fatal("expected latest job to be rendered")
+	}
+	if strings.Contains(body, "Job message 01") {
+		t.Fatal("expected oldest job outside latest 20 to be omitted")
+	}
+	if got := strings.Count(body, `class="btn btn-outline-secondary btn-sm" href="/jobs/`); got != 20 {
+		t.Fatalf("expected 20 job rows, got %d", got)
+	}
+	if !strings.Contains(body, "20 of 21 records") {
+		t.Fatal("expected jobs summary count to reflect the 20 latest items")
+	}
+	first := strings.Index(body, "Job message 21")
+	second := strings.Index(body, "Job message 20")
+	if first == -1 || second == -1 || !(first < second) {
+		t.Fatal("expected latest jobs to remain ordered newest first")
 	}
 }
 

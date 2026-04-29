@@ -3,9 +3,10 @@
   <div class="container-xl">
     <div class="row g-2 align-items-center">
       <div class="col">
-        <div class="page-pretitle">{{ if .IsEdit }}Edit target{{ else }}New target{{ end }}</div>
         <h2 class="page-title">{{ .Heading }}</h2>
+        {{ if .Description }}
         <div class="text-secondary">{{ .Description }}</div>
+        {{ end }}
       </div>
       <div class="col-auto ms-auto d-print-none">
         <a class="btn btn-outline-secondary" href="/kong-targets">Back</a>
@@ -22,17 +23,12 @@
     </div>
     {{ end }}
 
-    <div class="row row-deck row-cards">
-      <div class="col-lg-8">
-        <form class="card" method="post" action="{{ .Action }}" novalidate>
+    <div class="row g-3 align-items-stretch">
+      <div class="col-lg-8 d-flex">
+        <form class="card h-100 w-100" method="post" action="{{ .Action }}" novalidate>
           <div class="card-header">
             <div>
               <h3 class="card-title">Target metadata</h3>
-              <div class="text-secondary">Secret values are stored for later use and never rendered back in plain
-                text.</div>
-            </div>
-            <div class="card-actions">
-              <span class="badge bg-secondary-lt">{{ if .IsEdit }}Edit{{ else }}New{{ end }}</span>
             </div>
           </div>
           <div class="card-body">
@@ -106,6 +102,56 @@
             </div>
           </div>
         </form>
+      </div>
+
+      <div class="col-lg-4 d-flex">
+        <aside class="card h-100 w-100">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Target workflow</h3>
+            </div>
+          </div>
+          <div class="card-body">
+            <ol class="app-workflow-list app-workflow-list-compact">
+              <li class="{{ if .IsEdit }}is-complete{{ else }}is-current{{ end }}">
+                <span class="app-workflow-index">{{ if .IsEdit }}✓{{ else }}1{{ end }}</span>
+                <div class="app-workflow-copy">
+                  <div class="app-workflow-heading">
+                    <strong>Save target metadata</strong>
+                    <span class="badge bg-{{ if .IsEdit }}success{{ else }}warning{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}warning{{ end }}">{{ if .IsEdit }}Done{{ else }}Current{{ end }}</span>
+                  </div>
+                </div>
+              </li>
+              <li class="{{ if .IsEdit }}is-current{{ else }}is-locked{{ end }}">
+                <span class="app-workflow-index">2</span>
+                <div class="app-workflow-copy">
+                  <div class="app-workflow-heading">
+                    <strong>Test Admin API connection</strong>
+                    <span class="badge bg-{{ if .IsEdit }}warning{{ else }}secondary{{ end }}-lt text-{{ if .IsEdit }}warning{{ else }}secondary{{ end }}">{{ if .IsEdit }}Next{{ else }}Waiting{{ end }}</span>
+                  </div>
+                  {{ if .IsEdit }}
+                  <form method="post" action="/kong-targets/{{ .Form.ID }}/test"
+                    data-confirm="Run a connectivity test against this Kong Admin API target?">
+                    <button class="btn btn-outline-secondary btn-sm" type="submit">Test connection</button>
+                  </form>
+                  {{ end }}
+                </div>
+              </li>
+              <li class="{{ if .IsEdit }}is-ready{{ else }}is-locked{{ end }}">
+                <span class="app-workflow-index">3</span>
+                <div class="app-workflow-copy">
+                  <div class="app-workflow-heading">
+                    <strong>Use for certificate sync</strong>
+                    <span class="badge bg-{{ if .IsEdit }}success{{ else }}secondary{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}secondary{{ end }}">{{ if .IsEdit }}Ready{{ else }}Waiting{{ end }}</span>
+                  </div>
+                  {{ if .IsEdit }}
+                  <a class="app-form-checklist-action" href="/certificates">Open certificates →</a>
+                  {{ end }}
+                </div>
+              </li>
+            </ol>
+          </div>
+        </aside>
       </div>
     </div>
   </div>

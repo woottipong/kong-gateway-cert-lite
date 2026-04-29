@@ -24,6 +24,7 @@ import (
 var templateFiles embed.FS
 
 const flashCookieName = "kong_cert_lite_flash"
+const jobsListLimit = 20
 
 type Handler struct {
 	logger       *slog.Logger
@@ -40,9 +41,7 @@ type PageData struct {
 	Heading       string
 	Description   string
 	PrimaryAction string
-	StatusLabel   string
 	Flash         *FlashMessage
-	Metrics       []Metric
 	Columns       []string
 	EmptyTitle    string
 	EmptyText     string
@@ -50,7 +49,6 @@ type PageData struct {
 	NavCertificatesClass string
 	NavKongTargetsClass  string
 	NavJobsClass         string
-	NavSettingsClass     string
 }
 
 type FlashMessage struct {
@@ -109,12 +107,6 @@ type JobDetailPage struct {
 	Job usecase.JobView
 }
 
-type Metric struct {
-	Label string
-	Value string
-	Tone  string
-}
-
 type ListFilters struct {
 	Query       string
 	Status      string
@@ -156,23 +148,16 @@ func (h *Handler) Certificates(c *fiber.Ctx) error {
 	totalCount := len(certificates)
 	filters := certificateFiltersFromRequest(c)
 	filteredCertificates := filterCertificates(certificates, filters)
-	active, warning, failed := certificateMetrics(certificates)
 	return h.render(c, fiber.StatusOK, "templates/certificates.html", CertificateListPage{
 		PageData: h.pageData(c, PageData{
 			Title:         "Certificates",
 			Active:        "certificates",
 			Heading:       "Certificates",
-			Description:   "Track TLS lifecycle, renewal windows, and Kong sync readiness from one workspace.",
+			Description:   "TLS coverage, expiry, and Kong sync readiness.",
 			PrimaryAction: "Add certificate",
-			StatusLabel:   "Ready",
-			Metrics: []Metric{
-				{Label: "Active", Value: strconv.Itoa(active), Tone: "success"},
-				{Label: "Expiring soon", Value: strconv.Itoa(warning), Tone: "warning"},
-				{Label: "Needs attention", Value: strconv.Itoa(failed), Tone: "danger"},
-			},
-			Columns:    []string{"Certificate", "Lifecycle", "Kong sync", "Actions"},
-			EmptyTitle: "No certificates",
-			EmptyText:  "Create the first certificate record to begin tracking expiry and Kong sync state.",
+			Columns:       []string{"Certificate", "Lifecycle", "Kong sync", "Actions"},
+			EmptyTitle:    "No certificates",
+			EmptyText:     "Create the first certificate record to begin tracking expiry and Kong sync state.",
 		}),
 		Certificates: filteredCertificates,
 		Filters:      filters,
@@ -292,9 +277,8 @@ func (h *Handler) CertificateDetail(c *fiber.Ctx) error {
 			Title:         certificate.Certificate.Name,
 			Active:        "certificates",
 			Heading:       certificate.Certificate.Name,
-			Description:   "Review lifecycle state, coverage, renewal policy, and Kong target sync readiness.",
+			Description:   "Certificate coverage, workflow, and linked Kong targets.",
 			PrimaryAction: "Renew now",
-			StatusLabel:   certificate.StatusLabel,
 		}),
 		Certificate: certificate,
 		LatestJob:   latestJob,
@@ -403,23 +387,16 @@ func (h *Handler) KongTargets(c *fiber.Ctx) error {
 	totalCount := len(targets)
 	filters := kongTargetFiltersFromRequest(c)
 	filteredTargets := filterKongTargets(targets, filters)
-	online, offline, unknown := kongTargetMetrics(targets)
 	return h.render(c, fiber.StatusOK, "templates/kong_targets.html", KongTargetListPage{
 		PageData: h.pageData(c, PageData{
-			Title:         "Kong Targets",
+			Title:         "Kong targets",
 			Active:        "kong-targets",
-			Heading:       "Kong Targets",
-			Description:   "Track Kong Admin API endpoints, health checks, auth mode, and certificate sync destinations.",
+			Heading:       "Kong targets",
+			Description:   "Kong Admin API endpoints used for certificate sync.",
 			PrimaryAction: "Add target",
-			StatusLabel:   "Targets",
-			Metrics: []Metric{
-				{Label: "Online", Value: strconv.Itoa(online), Tone: "success"},
-				{Label: "Offline", Value: strconv.Itoa(offline), Tone: "danger"},
-				{Label: "Unknown", Value: strconv.Itoa(unknown), Tone: "secondary"},
-			},
-			Columns:    []string{"Target", "Endpoint", "Health", "Actions"},
-			EmptyTitle: "No Kong targets",
-			EmptyText:  "Add a target before syncing certificates to Kong Gateway.",
+			Columns:       []string{"Target", "Health", "Auth", "Actions"},
+			EmptyTitle:    "No Kong targets",
+			EmptyText:     "Add a target before syncing certificates to Kong Gateway.",
 		}),
 		Targets:    filteredTargets,
 		Filters:    filters,
@@ -545,23 +522,19 @@ func (h *Handler) Jobs(c *fiber.Ctx) error {
 	totalCount := len(jobs)
 	filters := jobFiltersFromRequest(c)
 	filteredJobs := filterJobs(jobs, filters)
-	running, succeeded, failed := jobMetrics(jobs)
+	if len(filteredJobs) > jobsListLimit {
+		filteredJobs = filteredJobs[:jobsListLimit]
+	}
 	return h.render(c, fiber.StatusOK, "templates/jobs.html", JobListPage{
 		PageData: h.pageData(c, PageData{
-			Title:         "Jobs / Logs",
+			Title:         "Jobs and logs",
 			Active:        "jobs",
-			Heading:       "Jobs / Logs",
-			Description:   "Audit certificate and Kong operations by time, scope, status, and message.",
+			Heading:       "Jobs and logs",
+			Description:   "Operation history for issue, sync, and target checks.",
 			PrimaryAction: "Refresh",
-			StatusLabel:   "History",
-			Metrics: []Metric{
-				{Label: "Running", Value: strconv.Itoa(running), Tone: "primary"},
-				{Label: "Succeeded", Value: strconv.Itoa(succeeded), Tone: "success"},
-				{Label: "Failed", Value: strconv.Itoa(failed), Tone: "danger"},
-			},
-			Columns:    []string{"Run", "Scope", "Outcome", "Actions"},
-			EmptyTitle: "No jobs",
-			EmptyText:  "Job history appears after certificate, sync, or Kong target actions run.",
+			Columns:       []string{"Run", "Scope", "Outcome", "Actions"},
+			EmptyTitle:    "No jobs",
+			EmptyText:     "Job history appears after certificate, sync, or Kong target actions run.",
 		}),
 		Jobs:       filteredJobs,
 		Filters:    filters,
@@ -588,40 +561,20 @@ func (h *Handler) JobDetail(c *fiber.Ctx) error {
 			Title:         "Job #" + strconv.FormatInt(job.Job.ID, 10),
 			Active:        "jobs",
 			Heading:       "Job #" + strconv.FormatInt(job.Job.ID, 10),
-			Description:   "Execution timing, status, message, and detailed log output.",
+			Description:   "Run status, timing, and log output.",
 			PrimaryAction: "Back to jobs",
-			StatusLabel:   job.StatusLabel,
 		}),
 		Job: job,
 	})
 }
-
-func (h *Handler) Settings(c *fiber.Ctx) error {
-	return h.render(c, fiber.StatusOK, "templates/placeholder.html", h.pageData(c, PageData{
-		Title:         "Settings",
-		Active:        "settings",
-		Heading:       "Settings",
-		Description:   "Review runtime mode, storage paths, and renewal defaults.",
-		PrimaryAction: "Reload",
-		StatusLabel:   "Local",
-		Metrics: []Metric{
-			{Label: "Database", Value: "SQLite", Tone: "primary"},
-			{Label: "ACME", Value: "Staging", Tone: "warning"},
-			{Label: "Storage", Value: "/data", Tone: "secondary"},
-		},
-		Columns:    []string{"Setting", "Value", "Source", "Status"},
-		EmptyTitle: "Settings overview",
-		EmptyText:  "Runtime settings will be surfaced as configuration support is expanded.",
-	}))
-}
-
 func (h *Handler) renderCertificateForm(c *fiber.Ctx, status int, form usecase.CertificateFormData, errors map[string]string, isEdit bool, domainsAndSNILock bool) error {
-	title := "Add Certificate"
+	title := "Add certificate"
 	action := "/certificates"
-	description := "Create certificate metadata for ACME issue, renewal, and Kong sync workflows."
+	description := "Create metadata before issuing and syncing."
 	if isEdit {
-		title = "Edit Certificate"
+		title = "Edit certificate"
 		action = "/certificates/" + strconv.FormatInt(form.ID, 10)
+		description = "Update editable metadata and renewal policy."
 	}
 
 	return h.render(c, status, "templates/certificate_form.html", CertificateFormPage{
@@ -631,7 +584,6 @@ func (h *Handler) renderCertificateForm(c *fiber.Ctx, status int, form usecase.C
 			Heading:       title,
 			Description:   description,
 			PrimaryAction: "Issue certificate",
-			StatusLabel:   "Metadata",
 		}),
 		Form:              form,
 		Errors:            errors,
@@ -658,11 +610,13 @@ func snisHelpText(locked bool) string {
 }
 
 func (h *Handler) renderKongTargetForm(c *fiber.Ctx, status int, form usecase.KongTargetFormData, errors map[string]string, isEdit bool) error {
-	title := "Add Kong Target"
+	title := "Add Kong target"
 	action := "/kong-targets"
+	description := "Add a Kong Admin API endpoint for sync."
 	if isEdit {
-		title = "Edit Kong Target"
+		title = "Edit Kong target"
 		action = "/kong-targets/" + strconv.FormatInt(form.ID, 10)
+		description = "Update Kong target metadata and auth settings."
 	}
 
 	return h.render(c, status, "templates/kong_target_form.html", KongTargetFormPage{
@@ -670,9 +624,8 @@ func (h *Handler) renderKongTargetForm(c *fiber.Ctx, status int, form usecase.Ko
 			Title:         title,
 			Active:        "kong-targets",
 			Heading:       title,
-			Description:   "Configure Kong Admin API metadata. Use the target list to run connectivity checks.",
+			Description:   description,
 			PrimaryAction: "Save target",
-			StatusLabel:   "Target",
 		}),
 		Form:   form,
 		Errors: errors,
@@ -733,7 +686,6 @@ func (h *Handler) pageData(c *fiber.Ctx, data PageData) PageData {
 	data.NavCertificatesClass = navLinkClass(data.Active, "certificates")
 	data.NavKongTargetsClass = navLinkClass(data.Active, "kong-targets")
 	data.NavJobsClass = navLinkClass(data.Active, "jobs")
-	data.NavSettingsClass = navLinkClass(data.Active, "settings")
 	return data
 }
 
@@ -826,20 +778,6 @@ func statusClass(status any) string {
 	}
 }
 
-func jobMetrics(jobs []usecase.JobView) (running int, succeeded int, failed int) {
-	for _, job := range jobs {
-		switch job.Job.Status {
-		case "running":
-			running++
-		case "success":
-			succeeded++
-		case "failed":
-			failed++
-		}
-	}
-	return running, succeeded, failed
-}
-
 func statusString(status any) string {
 	switch value := status.(type) {
 	case string:
@@ -849,20 +787,6 @@ func statusString(status any) string {
 	default:
 		return fmt.Sprint(value)
 	}
-}
-
-func certificateMetrics(certificates []usecase.CertificateView) (active int, warning int, failed int) {
-	for _, certificate := range certificates {
-		switch certificate.Certificate.Status {
-		case "active":
-			active++
-		case "warning":
-			warning++
-		case "expired", "failed":
-			failed++
-		}
-	}
-	return active, warning, failed
 }
 
 func kongTargetFormFromRequest(c *fiber.Ctx, id int64) usecase.KongTargetFormData {
@@ -1056,18 +980,4 @@ func kongTargetInputFromForm(form usecase.KongTargetFormData) usecase.KongTarget
 		AuthHeaderName:  form.AuthHeaderName,
 		AuthHeaderValue: form.AuthHeaderValue,
 	}
-}
-
-func kongTargetMetrics(targets []usecase.KongTargetView) (online int, offline int, unknown int) {
-	for _, target := range targets {
-		switch target.Target.Status {
-		case "online":
-			online++
-		case "offline":
-			offline++
-		default:
-			unknown++
-		}
-	}
-	return online, offline, unknown
 }

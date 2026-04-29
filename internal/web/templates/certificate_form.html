@@ -3,9 +3,10 @@
   <div class="container-xl">
     <div class="row g-2 align-items-center">
       <div class="col">
-        <div class="page-pretitle">{{ if .IsEdit }}Edit certificate{{ else }}New certificate{{ end }}</div>
         <h2 class="page-title">{{ .Heading }}</h2>
+        {{ if .Description }}
         <div class="text-secondary">{{ .Description }}</div>
+        {{ end }}
       </div>
       <div class="col-auto ms-auto d-print-none">
         <a class="btn btn-outline-secondary" href="/certificates">Back</a>
@@ -22,18 +23,12 @@
     </div>
     {{ end }}
 
-    <div class="row row-deck row-cards">
-      <div class="col-lg-8">
-        <form class="card" method="post" action="{{ .Action }}" novalidate>
+    <div class="row g-3 align-items-stretch">
+      <div class="col-lg-8 d-flex">
+        <form class="card h-100 w-100" method="post" action="{{ .Action }}" novalidate>
           <div class="card-header">
             <div>
-              <h3 class="card-title">{{ if .IsEdit }}Certificate metadata{{ else }}Certificate request{{ end }}</h3>
-              <div class="text-secondary">{{ if .IsEdit }}Update metadata below. Coverage fields are locked after the
-                certificate has been issued.{{ else }}Create the inventory record first, then issue and sync it from
-                the certificate detail page.{{ end }}</div>
-            </div>
-            <div class="card-actions">
-              <span class="badge bg-warning-lt text-warning">{{ if .IsEdit }}Edit{{ else }}Pending{{ end }}</span>
+              <h3 class="card-title">Certificate metadata</h3>
             </div>
           </div>
           <div class="card-body">
@@ -115,35 +110,44 @@
         </form>
       </div>
 
-      <div class="col-lg-4">
-        <div class="card">
+      <div class="col-lg-4 d-flex">
+        <aside class="card h-100 w-100">
           <div class="card-header">
             <div>
-              <h3 class="card-title">{{ if .IsEdit }}Certificate lifecycle{{ else }}Next workflow{{ end }}</h3>
-              <div class="text-secondary">What happens after this step.</div>
+              <h3 class="card-title">Issue and sync workflow</h3>
             </div>
           </div>
           <div class="card-body">
-            <ol class="app-form-checklist">
-              <li class="app-form-checklist-item{{ if .IsEdit }} is-done{{ end }}">
-                <span class="app-form-checklist-marker">{{ if .IsEdit }}✓{{ else }}1{{ end }}</span>
-                <span>Create pending metadata</span>
+            <ol class="app-workflow-list app-workflow-list-compact">
+              <li class="{{ if .IsEdit }}is-complete{{ else }}is-current{{ end }}">
+                <span class="app-workflow-index">{{ if .IsEdit }}✓{{ else }}1{{ end }}</span>
+                <div class="app-workflow-copy">
+                  <div class="app-workflow-heading">
+                    <strong>Create pending metadata</strong>
+                    <span class="badge bg-{{ if .IsEdit }}success{{ else }}warning{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}warning{{ end }}">{{ if .IsEdit }}Done{{ else }}Current{{ end }}</span>
+                  </div>
+                </div>
               </li>
-              <li class="app-form-checklist-item{{ if and .IsEdit .DomainsAndSNILock }} is-done{{ else if and .IsEdit
-                (not .DomainsAndSNILock) }} is-current{{ end }}">
-                <span class="app-form-checklist-marker">{{ if and .IsEdit .DomainsAndSNILock }}✓{{ else }}2{{ end
-                  }}</span>
-                <div>
-                  <span>Issue the certificate</span>
+              <li class="{{ if and .IsEdit .DomainsAndSNILock }}is-complete{{ else if and .IsEdit
+                (not .DomainsAndSNILock) }}is-current{{ else }}is-locked{{ end }}">
+                <span class="app-workflow-index">{{ if and .IsEdit .DomainsAndSNILock }}✓{{ else }}2{{ end }}</span>
+                <div class="app-workflow-copy">
+                  <div class="app-workflow-heading">
+                    <strong>Issue certificate</strong>
+                    <span class="badge bg-{{ if and .IsEdit .DomainsAndSNILock }}success{{ else if .IsEdit }}warning{{ else }}secondary{{ end }}-lt text-{{ if and .IsEdit .DomainsAndSNILock }}success{{ else if .IsEdit }}warning{{ else }}secondary{{ end }}">{{ if and .IsEdit .DomainsAndSNILock }}Done{{ else if .IsEdit }}Next{{ else }}Waiting{{ end }}</span>
+                  </div>
                   {{ if and .IsEdit (not .DomainsAndSNILock) }}
                   <a class="app-form-checklist-action" href="/certificates/{{ .Form.ID }}">Go to detail →</a>
                   {{ end }}
                 </div>
               </li>
-              <li class="app-form-checklist-item{{ if and .IsEdit .DomainsAndSNILock }} is-current{{ end }}">
-                <span class="app-form-checklist-marker">3</span>
-                <div>
-                  <span>Link and sync to Kong targets</span>
+              <li class="{{ if and .IsEdit .DomainsAndSNILock }}is-current{{ else }}is-locked{{ end }}">
+                <span class="app-workflow-index">3</span>
+                <div class="app-workflow-copy">
+                  <div class="app-workflow-heading">
+                    <strong>Sync to Kong</strong>
+                    <span class="badge bg-{{ if and .IsEdit .DomainsAndSNILock }}warning{{ else }}secondary{{ end }}-lt text-{{ if and .IsEdit .DomainsAndSNILock }}warning{{ else }}secondary{{ end }}">{{ if and .IsEdit .DomainsAndSNILock }}Next{{ else }}Waiting{{ end }}</span>
+                  </div>
                   {{ if and .IsEdit .DomainsAndSNILock }}
                   <a class="app-form-checklist-action" href="/certificates/{{ .Form.ID }}">Go to detail →</a>
                   {{ end }}
@@ -151,7 +155,7 @@
               </li>
             </ol>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   </div>
