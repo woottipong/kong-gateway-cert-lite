@@ -14,11 +14,9 @@
 
     return {
       backdrop,
-      dialog: backdrop.querySelector(".app-confirm-dialog"),
+      dialog: backdrop.querySelector(".modal-content"),
       title: backdrop.querySelector("[data-confirm-title]"),
-      kicker: backdrop.querySelector("[data-confirm-kicker]"),
       message: backdrop.querySelector("[data-confirm-message]"),
-      icon: backdrop.querySelector("[data-confirm-icon]"),
       cancel: backdrop.querySelector("[data-confirm-cancel]"),
       accept: backdrop.querySelector("[data-confirm-accept]"),
     };
@@ -68,8 +66,10 @@
   }
 
   function closeDialog(parts) {
+    parts.backdrop.classList.remove("show", "d-block");
     parts.backdrop.hidden = true;
-    document.documentElement.classList.remove("app-confirm-open");
+    parts.backdrop.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
     parts.backdrop.dataset.confirmTone = "";
     state.form = null;
     state.submitter = null;
@@ -127,17 +127,13 @@
     if (parts.title) {
       parts.title.textContent = form.dataset.confirmTitle || actionTitle(tone);
     }
-    if (parts.kicker) {
-      parts.kicker.textContent = tone === "danger" ? "Requires confirmation" : "Review before continuing";
-    }
-    if (parts.icon) {
-      parts.icon.textContent = tone === "danger" ? "!" : "?";
-    }
     parts.accept.textContent = actionLabel(tone, submitter);
-    parts.accept.className = tone === "danger" ? "btn btn-danger" : "btn btn-primary";
+    parts.accept.className = tone === "danger" ? "btn btn-danger" : tone === "warning" ? "btn btn-warning" : "btn btn-primary";
 
+    parts.backdrop.classList.add("show", "d-block");
     parts.backdrop.hidden = false;
-    document.documentElement.classList.add("app-confirm-open");
+    parts.backdrop.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
     parts.dialog.focus();
     return true;
   }
@@ -183,7 +179,7 @@
       return;
     }
 
-    if (event.target === parts.backdrop || event.target === parts.cancel) {
+    if (event.target === parts.backdrop || event.target.closest("[data-confirm-cancel]")) {
       closeDialog(parts);
       return;
     }
@@ -238,15 +234,15 @@
     function dismiss() {
       if (dismissed) return;
       dismissed = true;
-      toast.classList.add("is-hiding");
+      toast.classList.remove("show");
       window.setTimeout(function () {
-        var region = toast.closest(".app-toast-region");
+        var region = toast.closest("[data-flash-region]");
         if (region) {
           region.remove();
           return;
         }
         toast.remove();
-      }, 180);
+      }, 150);
     }
 
     if (dismissButton) {

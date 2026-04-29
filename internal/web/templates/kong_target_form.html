@@ -37,13 +37,13 @@
               <div class="row g-3">
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="name">Target name</label>
-                  <input class="form-control {{ if fieldError .Errors "name" }}is-invalid{{ end }}" id="name"
+                  <input class="form-control {{ if fieldError .Errors " name" }}is-invalid{{ end }}" id="name"
                     name="name" value="{{ .Form.Name }}" placeholder="Production Kong">
                   {{ with fieldError .Errors "name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
                 </div>
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="environment">Environment</label>
-                  <input class="form-control {{ if fieldError .Errors "environment" }}is-invalid{{ end }}"
+                  <input class="form-control {{ if fieldError .Errors " environment" }}is-invalid{{ end }}"
                     id="environment" name="environment" value="{{ .Form.Environment }}" placeholder="production">
                   {{ with fieldError .Errors "environment" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
                 </div>
@@ -55,7 +55,7 @@
               <div class="row g-3">
                 <div class="col-12">
                   <label class="form-label" for="admin_url">Admin API URL</label>
-                  <input class="form-control {{ if fieldError .Errors "admin_url" }}is-invalid{{ end }}" id="admin_url"
+                  <input class="form-control {{ if fieldError .Errors " admin_url" }}is-invalid{{ end }}" id="admin_url"
                     name="admin_url" value="{{ .Form.AdminURL }}" placeholder="https://kong-admin.internal:8444">
                   <div class="form-hint">Use the private Admin API endpoint, not the proxy port.</div>
                   {{ with fieldError .Errors "admin_url" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
@@ -68,7 +68,7 @@
               <div class="row g-3">
                 <div class="col-12 col-lg-4">
                   <label class="form-label" for="auth_type">Auth type</label>
-                  <select class="form-select {{ if fieldError .Errors "auth_type" }}is-invalid{{ end }}" id="auth_type"
+                  <select class="form-select {{ if fieldError .Errors " auth_type" }}is-invalid{{ end }}" id="auth_type"
                     name="auth_type">
                     <option value="none" {{ if eq .Form.AuthType "none" }}selected{{ end }}>None</option>
                     <option value="custom-header" {{ if eq .Form.AuthType "custom-header" }}selected{{ end }}>Custom
@@ -78,16 +78,15 @@
                 </div>
                 <div class="col-12 col-lg-4">
                   <label class="form-label" for="auth_header_name">Header name</label>
-                  <input class="form-control {{ if fieldError .Errors "auth_header_name" }}is-invalid{{ end }}"
+                  <input class="form-control {{ if fieldError .Errors " auth_header_name" }}is-invalid{{ end }}"
                     id="auth_header_name" name="auth_header_name" value="{{ .Form.AuthHeaderName }}"
                     placeholder="Kong-Admin-Token">
                   {{ with fieldError .Errors "auth_header_name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
                 </div>
                 <div class="col-12 col-lg-4">
                   <label class="form-label" for="auth_header_value">Header value</label>
-                  <input class="form-control {{ if fieldError .Errors "auth_header_value" }}is-invalid{{ end }}"
-                    id="auth_header_value" name="auth_header_value" type="password" value=""
-                    autocomplete="new-password"
+                  <input class="form-control {{ if fieldError .Errors " auth_header_value" }}is-invalid{{ end }}"
+                    id="auth_header_value" name="auth_header_value" type="password" value="" autocomplete="new-password"
                     placeholder="{{ if .Form.HasSecret }}Leave blank to keep existing value{{ else }}Secret token{{ end }}">
                   {{ with fieldError .Errors "auth_header_value" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
                 </div>
@@ -112,44 +111,67 @@
             </div>
           </div>
           <div class="card-body">
-            <ol class="app-workflow-list app-workflow-list-compact">
-              <li class="{{ if .IsEdit }}is-complete{{ else }}is-current{{ end }}">
-                <span class="app-workflow-index">{{ if .IsEdit }}✓{{ else }}1{{ end }}</span>
-                <div class="app-workflow-copy">
-                  <div class="app-workflow-heading">
-                    <strong>Save target metadata</strong>
-                    <span class="badge bg-{{ if .IsEdit }}success{{ else }}warning{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}warning{{ end }}">{{ if .IsEdit }}Done{{ else }}Current{{ end }}</span>
+            <div class="list-group list-group-flush">
+              <div class="list-group-item px-0">
+                <div class="d-flex gap-3 align-items-start">
+                  <span
+                    class="avatar avatar-sm bg-{{ if .IsEdit }}success{{ else }}warning{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}warning{{ end }}">{{
+                    if .IsEdit }}✓{{ else }}1{{ end }}</span>
+                  <div class="flex-fill">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                      <strong>Save target metadata</strong>
+                      <span
+                        class="badge bg-{{ if .IsEdit }}success{{ else }}warning{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}warning{{ end }}">{{
+                        if .IsEdit }}Done{{ else }}Current{{ end }}</span>
+                    </div>
+                    <div class="text-secondary small">Store the Admin API endpoint and authentication details first.
+                    </div>
                   </div>
                 </div>
-              </li>
-              <li class="{{ if .IsEdit }}is-current{{ else }}is-locked{{ end }}">
-                <span class="app-workflow-index">2</span>
-                <div class="app-workflow-copy">
-                  <div class="app-workflow-heading">
-                    <strong>Test Admin API connection</strong>
-                    <span class="badge bg-{{ if .IsEdit }}warning{{ else }}secondary{{ end }}-lt text-{{ if .IsEdit }}warning{{ else }}secondary{{ end }}">{{ if .IsEdit }}Next{{ else }}Waiting{{ end }}</span>
+              </div>
+              <div class="list-group-item px-0">
+                <div class="d-flex gap-3 align-items-start">
+                  <span
+                    class="avatar avatar-sm bg-{{ if .IsEdit }}warning{{ else }}secondary{{ end }}-lt text-{{ if .IsEdit }}warning{{ else }}secondary{{ end }}">2</span>
+                  <div class="flex-fill">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                      <strong>Test Admin API connection</strong>
+                      <span
+                        class="badge bg-{{ if .IsEdit }}warning{{ else }}secondary{{ end }}-lt text-{{ if .IsEdit }}warning{{ else }}secondary{{ end }}">{{
+                        if .IsEdit }}Next{{ else }}Waiting{{ end }}</span>
+                    </div>
+                    <div class="text-secondary small mb-3">Run a connectivity check after saving to verify the target is
+                      reachable.</div>
+                    {{ if .IsEdit }}
+                    <form method="post" action="/kong-targets/{{ .Form.ID }}/test"
+                      data-confirm="Run a connectivity test against this Kong Admin API target?">
+                      <button class="btn btn-outline-secondary btn-sm" type="submit">Test connection</button>
+                    </form>
+                    {{ end }}
                   </div>
-                  {{ if .IsEdit }}
-                  <form method="post" action="/kong-targets/{{ .Form.ID }}/test"
-                    data-confirm="Run a connectivity test against this Kong Admin API target?">
-                    <button class="btn btn-outline-secondary btn-sm" type="submit">Test connection</button>
-                  </form>
-                  {{ end }}
                 </div>
-              </li>
-              <li class="{{ if .IsEdit }}is-ready{{ else }}is-locked{{ end }}">
-                <span class="app-workflow-index">3</span>
-                <div class="app-workflow-copy">
-                  <div class="app-workflow-heading">
-                    <strong>Use for certificate sync</strong>
-                    <span class="badge bg-{{ if .IsEdit }}success{{ else }}secondary{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}secondary{{ end }}">{{ if .IsEdit }}Ready{{ else }}Waiting{{ end }}</span>
+              </div>
+              <div class="list-group-item px-0">
+                <div class="d-flex gap-3 align-items-start">
+                  <span
+                    class="avatar avatar-sm bg-{{ if .IsEdit }}success{{ else }}secondary{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}secondary{{ end }}">3</span>
+                  <div class="flex-fill">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                      <strong>Use for certificate sync</strong>
+                      <span
+                        class="badge bg-{{ if .IsEdit }}success{{ else }}secondary{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}secondary{{ end }}">{{
+                        if .IsEdit }}Ready{{ else }}Waiting{{ end }}</span>
+                    </div>
+                    <div class="text-secondary small">Targets that are saved can be linked from certificate detail pages
+                      for sync.</div>
+                    {{ if .IsEdit }}
+                    <a class="link-success small fw-semibold d-inline-block mt-2" href="/certificates">Open certificates
+                      →</a>
+                    {{ end }}
                   </div>
-                  {{ if .IsEdit }}
-                  <a class="app-form-checklist-action" href="/certificates">Open certificates →</a>
-                  {{ end }}
                 </div>
-              </li>
-            </ol>
+              </div>
+            </div>
           </div>
         </aside>
       </div>

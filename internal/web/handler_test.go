@@ -56,7 +56,7 @@ func TestPlaceholderPagesRenderLayout(t *testing.T) {
 				t.Fatalf("expected status 200, got %d", resp.StatusCode)
 			}
 			for _, want := range []string{
-				`class="navbar navbar-vertical navbar-expand-lg navbar-light border-end d-print-none app-sidebar"`,
+				`class="navbar navbar-vertical navbar-expand-lg border-end d-print-none bg-body"`,
 				`class="page-header d-print-none"`,
 				`class="card"`,
 				`href="/static/tabler/tabler.min.css"`,
@@ -145,6 +145,20 @@ func TestCreateCertificateAndRenderDetail(t *testing.T) {
 	for _, want := range []string{"Production wildcard", "example.com", "*.example.com", "Enabled", "30 days"} {
 		if !strings.Contains(detailBody, want) {
 			t.Fatalf("expected detail body to contain %q", want)
+		}
+	}
+	for _, want := range []string{
+		`class="list-group list-group-flush"`,
+		`class="badge bg-secondary-lt text-secondary">example.com<`,
+		`class="avatar avatar-sm bg-success-lt text-success">1<`,
+	} {
+		if !strings.Contains(detailBody, want) {
+			t.Fatalf("expected detail body to contain %q", want)
+		}
+	}
+	for _, unwanted := range []string{"app-config-strip", "app-workflow-list", "app-detail-note", "app-coverage-grid"} {
+		if strings.Contains(detailBody, unwanted) {
+			t.Fatalf("expected detail body to omit legacy custom class %q", unwanted)
 		}
 	}
 

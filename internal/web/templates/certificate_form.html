@@ -37,13 +37,13 @@
               <div class="row g-3">
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="name">Certificate name</label>
-                  <input class="form-control {{ if fieldError .Errors "name" }}is-invalid{{ end }}" id="name"
+                  <input class="form-control {{ if fieldError .Errors " name" }}is-invalid{{ end }}" id="name"
                     name="name" value="{{ .Form.Name }}" placeholder="Production wildcard">
                   {{ with fieldError .Errors "name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
                 </div>
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="email">ACME account email</label>
-                  <input class="form-control {{ if fieldError .Errors "email" }}is-invalid{{ end }}" id="email"
+                  <input class="form-control {{ if fieldError .Errors " email" }}is-invalid{{ end }}" id="email"
                     name="email" value="{{ .Form.Email }}" placeholder="admin@example.com">
                   {{ with fieldError .Errors "email" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
                 </div>
@@ -55,7 +55,7 @@
               <div class="row g-3">
                 <div class="col-12 col-lg-6">
                   <label class="form-label">Domains</label>
-                  <div class="app-tag-input{{ if fieldError .Errors "domains" }} is-invalid{{ end }}"
+                  <div class="app-tag-input{{ if fieldError .Errors " domains" }} is-invalid{{ end }}"
                     data-tag-for="domains" {{ if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
                   {{ with fieldError .Errors "domains" }}<div class="invalid-feedback d-block">{{ . }}</div>{{ end }}
                   <textarea class="visually-hidden" id="domains" name="domains" {{ if .DomainsAndSNILock }}disabled{{
@@ -64,8 +64,8 @@
                 </div>
                 <div class="col-12 col-lg-6">
                   <label class="form-label">SNI values</label>
-                  <div class="app-tag-input{{ if fieldError .Errors "snis" }} is-invalid{{ end }}" data-tag-for="snis" {{
-                    if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
+                  <div class="app-tag-input{{ if fieldError .Errors " snis" }} is-invalid{{ end }}" data-tag-for="snis"
+                    {{ if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
                   {{ with fieldError .Errors "snis" }}<div class="invalid-feedback d-block">{{ . }}</div>{{ end }}
                   <textarea class="visually-hidden" id="snis" name="snis" {{ if .DomainsAndSNILock }}disabled{{ end
                     }}>{{ .Form.SNIsText }}</textarea>
@@ -80,12 +80,13 @@
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="renew_before_days">Renew before expiry</label>
                   <div class="input-group">
-                    <input class="form-control {{ if fieldError .Errors "renew_before_days" }}is-invalid{{ end }}"
+                    <input class="form-control {{ if fieldError .Errors " renew_before_days" }}is-invalid{{ end }}"
                       id="renew_before_days" name="renew_before_days" type="number" min="1"
                       value="{{ .Form.RenewBeforeDays }}">
                     <span class="input-group-text">days</span>
                   </div>
-                  {{ with fieldError .Errors "renew_before_days" }}<div class="invalid-feedback d-block">{{ . }}</div>{{ end }}
+                  {{ with fieldError .Errors "renew_before_days" }}<div class="invalid-feedback d-block">{{ . }}</div>{{
+                  end }}
                 </div>
                 <div class="col-12 col-lg-6">
                   <label class="form-check form-switch">
@@ -118,42 +119,67 @@
             </div>
           </div>
           <div class="card-body">
-            <ol class="app-workflow-list app-workflow-list-compact">
-              <li class="{{ if .IsEdit }}is-complete{{ else }}is-current{{ end }}">
-                <span class="app-workflow-index">{{ if .IsEdit }}✓{{ else }}1{{ end }}</span>
-                <div class="app-workflow-copy">
-                  <div class="app-workflow-heading">
-                    <strong>Create pending metadata</strong>
-                    <span class="badge bg-{{ if .IsEdit }}success{{ else }}warning{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}warning{{ end }}">{{ if .IsEdit }}Done{{ else }}Current{{ end }}</span>
+            <div class="list-group list-group-flush">
+              <div class="list-group-item px-0">
+                <div class="d-flex gap-3 align-items-start">
+                  <span
+                    class="avatar avatar-sm bg-{{ if .IsEdit }}success{{ else }}warning{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}warning{{ end }}">{{
+                    if .IsEdit }}✓{{ else }}1{{ end }}</span>
+                  <div class="flex-fill">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                      <strong>Create pending metadata</strong>
+                      <span
+                        class="badge bg-{{ if .IsEdit }}success{{ else }}warning{{ end }}-lt text-{{ if .IsEdit }}success{{ else }}warning{{ end }}">{{
+                        if .IsEdit }}Done{{ else }}Current{{ end }}</span>
+                    </div>
+                    <div class="text-secondary small">Save the metadata first so the certificate can move into issue and
+                      sync steps.</div>
                   </div>
                 </div>
-              </li>
-              <li class="{{ if and .IsEdit .DomainsAndSNILock }}is-complete{{ else if and .IsEdit
-                (not .DomainsAndSNILock) }}is-current{{ else }}is-locked{{ end }}">
-                <span class="app-workflow-index">{{ if and .IsEdit .DomainsAndSNILock }}✓{{ else }}2{{ end }}</span>
-                <div class="app-workflow-copy">
-                  <div class="app-workflow-heading">
-                    <strong>Issue certificate</strong>
-                    <span class="badge bg-{{ if and .IsEdit .DomainsAndSNILock }}success{{ else if .IsEdit }}warning{{ else }}secondary{{ end }}-lt text-{{ if and .IsEdit .DomainsAndSNILock }}success{{ else if .IsEdit }}warning{{ else }}secondary{{ end }}">{{ if and .IsEdit .DomainsAndSNILock }}Done{{ else if .IsEdit }}Next{{ else }}Waiting{{ end }}</span>
+              </div>
+              <div class="list-group-item px-0">
+                <div class="d-flex gap-3 align-items-start">
+                  <span
+                    class="avatar avatar-sm bg-{{ if and .IsEdit .DomainsAndSNILock }}success{{ else if .IsEdit }}warning{{ else }}secondary{{ end }}-lt text-{{ if and .IsEdit .DomainsAndSNILock }}success{{ else if .IsEdit }}warning{{ else }}secondary{{ end }}">{{
+                    if and .IsEdit .DomainsAndSNILock }}✓{{ else }}2{{ end }}</span>
+                  <div class="flex-fill">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                      <strong>Issue certificate</strong>
+                      <span
+                        class="badge bg-{{ if and .IsEdit .DomainsAndSNILock }}success{{ else if .IsEdit }}warning{{ else }}secondary{{ end }}-lt text-{{ if and .IsEdit .DomainsAndSNILock }}success{{ else if .IsEdit }}warning{{ else }}secondary{{ end }}">{{
+                        if and .IsEdit .DomainsAndSNILock }}Done{{ else if .IsEdit }}Next{{ else }}Waiting{{ end
+                        }}</span>
+                    </div>
+                    <div class="text-secondary small">Issue is available from the certificate detail page after metadata
+                      has been created.</div>
+                    {{ if and .IsEdit (not .DomainsAndSNILock) }}
+                    <a class="link-success small fw-semibold d-inline-block mt-2" href="/certificates/{{ .Form.ID }}">Go
+                      to detail →</a>
+                    {{ end }}
                   </div>
-                  {{ if and .IsEdit (not .DomainsAndSNILock) }}
-                  <a class="app-form-checklist-action" href="/certificates/{{ .Form.ID }}">Go to detail →</a>
-                  {{ end }}
                 </div>
-              </li>
-              <li class="{{ if and .IsEdit .DomainsAndSNILock }}is-current{{ else }}is-locked{{ end }}">
-                <span class="app-workflow-index">3</span>
-                <div class="app-workflow-copy">
-                  <div class="app-workflow-heading">
-                    <strong>Sync to Kong</strong>
-                    <span class="badge bg-{{ if and .IsEdit .DomainsAndSNILock }}warning{{ else }}secondary{{ end }}-lt text-{{ if and .IsEdit .DomainsAndSNILock }}warning{{ else }}secondary{{ end }}">{{ if and .IsEdit .DomainsAndSNILock }}Next{{ else }}Waiting{{ end }}</span>
+              </div>
+              <div class="list-group-item px-0">
+                <div class="d-flex gap-3 align-items-start">
+                  <span
+                    class="avatar avatar-sm bg-{{ if and .IsEdit .DomainsAndSNILock }}warning{{ else }}secondary{{ end }}-lt text-{{ if and .IsEdit .DomainsAndSNILock }}warning{{ else }}secondary{{ end }}">3</span>
+                  <div class="flex-fill">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                      <strong>Sync to Kong</strong>
+                      <span
+                        class="badge bg-{{ if and .IsEdit .DomainsAndSNILock }}warning{{ else }}secondary{{ end }}-lt text-{{ if and .IsEdit .DomainsAndSNILock }}warning{{ else }}secondary{{ end }}">{{
+                        if and .IsEdit .DomainsAndSNILock }}Next{{ else }}Waiting{{ end }}</span>
+                    </div>
+                    <div class="text-secondary small">Certificate sync becomes available after issue completes and
+                      linked targets are configured.</div>
+                    {{ if and .IsEdit .DomainsAndSNILock }}
+                    <a class="link-success small fw-semibold d-inline-block mt-2" href="/certificates/{{ .Form.ID }}">Go
+                      to detail →</a>
+                    {{ end }}
                   </div>
-                  {{ if and .IsEdit .DomainsAndSNILock }}
-                  <a class="app-form-checklist-action" href="/certificates/{{ .Form.ID }}">Go to detail →</a>
-                  {{ end }}
                 </div>
-              </li>
-            </ol>
+              </div>
+            </div>
           </div>
         </aside>
       </div>
