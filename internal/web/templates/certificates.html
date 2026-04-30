@@ -26,8 +26,17 @@
               <td>
                 <div class="fw-semibold">{{ .Certificate.PrimaryDomain }}</div>
                 <div class="text-secondary">{{ .Certificate.Name }} · {{ .Type }}</div>
-                <div class="text-secondary small">{{ len .Certificate.Domains }} domains · {{ len .Certificate.SNIs }}
-                  SNI</div>
+              </td>
+              <td>
+                {{ if .Certificate.SNIs }}
+                <div class="d-flex flex-wrap gap-1">
+                  {{ range .Certificate.SNIs }}
+                  <span class="badge bg-secondary-lt text-secondary">{{ . }}</span>
+                  {{ end }}
+                </div>
+                {{ else }}
+                <span class="text-secondary">—</span>
+                {{ end }}
               </td>
               <td>
                 <div class="d-grid gap-1">

@@ -25,10 +25,12 @@
             <tr data-row-href="/kong-targets/{{ .Target.ID }}/edit">
               <td>
                 <div class="fw-semibold">{{ .Target.Name }}</div>
-                <div class="text-secondary">{{ .Target.Environment }}</div>
                 {{ if .Target.AdminURL }}
                 <div class="small text-secondary">{{ .Target.AdminURL }}</div>
                 {{ end }}
+              </td>
+              <td>
+                <span class="badge bg-secondary-lt text-secondary">{{ .Target.Environment }}</span>
               </td>
               <td>
                 <div class="d-grid gap-1">

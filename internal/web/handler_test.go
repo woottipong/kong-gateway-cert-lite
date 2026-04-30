@@ -56,7 +56,9 @@ func TestPlaceholderPagesRenderLayout(t *testing.T) {
 				t.Fatalf("expected status 200, got %d", resp.StatusCode)
 			}
 			for _, want := range []string{
-				`class="navbar navbar-vertical navbar-expand-lg border-end d-print-none bg-body"`,
+				`data-bs-theme="dark"`,
+				`class="navbar navbar-vertical navbar-expand-lg d-print-none app-sidebar"`,
+				`class="brand-logo"`,
 				`class="page-header d-print-none"`,
 				`class="card"`,
 				`href="/static/tabler/tabler.min.css"`,
@@ -168,6 +170,8 @@ func TestCreateCertificateAndRenderDetail(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Production wildcard",
+		`<th scope="col">SNI</th>`,
+		`class="badge bg-secondary-lt text-secondary">*.example.com<`,
 		"action=\"/certificates/1/delete\"",
 		">Delete<",
 		`class="table table-hover card-table table-vcenter align-middle mb-0"`,
@@ -762,6 +766,8 @@ func TestCreateKongTargetAndRenderList(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Production Kong",
+		`<th scope="col">Environment</th>`,
+		`class="badge bg-secondary-lt text-secondary">production<`,
 		"production",
 		"https://kong-admin.internal:8444",
 		"Custom header",
