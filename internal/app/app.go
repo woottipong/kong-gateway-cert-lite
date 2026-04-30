@@ -39,10 +39,10 @@ func New(cfg Config, logger *slog.Logger) (*App, error) {
 	kongTargetRepository := sqliteadapter.NewKongTargetRepository(database)
 	jobRepository := sqliteadapter.NewJobRepository(database)
 	jobUseCase := usecase.NewJobUseCase(jobRepository)
-	acmeClient := acmeadapter.NewLegoClient(cfg.AccountDir, cfg.LetsEncryptEnv, cfg.CloudflareToken)
-	acmeUseCase := usecase.NewACMEUseCase(certificateRepository, jobUseCase, acmeClient, cfg.CertDir)
 	kongAdminClient := kongadapter.NewAdminClient(nil)
 	kongSyncUseCase := usecase.NewKongSyncUseCase(certificateRepository, kongTargetRepository, jobUseCase, kongAdminClient)
+	acmeClient := acmeadapter.NewLegoClient(cfg.AccountDir, cfg.LetsEncryptEnv, cfg.CloudflareToken)
+	acmeUseCase := usecase.NewACMEUseCase(certificateRepository, jobUseCase, acmeClient, cfg.CertDir, kongSyncUseCase)
 
 	return &App{
 		cfg:          cfg,

@@ -310,6 +310,66 @@ func TestIssueCertificateWithoutCloudflareTokenMarksCertificateFailedAndCreatesF
 	}
 }
 
+func TestRenewCertificateWithoutCloudflareTokenMarksCertificateFailedAndCreatesFailedJob(t *testing.T) {
+	database, app := testServer(t)
+	certDir := t.TempDir()
+	certPath := filepath.Join(certDir, "fullchain.pem")
+	keyPath := filepath.Join(certDir, "privkey.pem")
+	if err := os.WriteFile(certPath, []byte("existing certificate"), 0o600); err != nil {
+		t.Fatalf("write existing certificate: %v", err)
+	}
+	if err := os.WriteFile(keyPath, []byte("existing key"), 0o600); err != nil {
+		t.Fatalf("write existing key: %v", err)
+	}
+
+	_, err := database.Exec(`
+		INSERT INTO certificates (
+			name, primary_domain, domains_json, email, snis_json,
+			cert_path, key_path, status
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, "Issued wildcard", "issued.example.com", `["issued.example.com","*.issued.example.com"]`, "ops@example.com", `["issued.example.com","*.issued.example.com"]`, certPath, keyPath, "active")
+	if err != nil {
+		t.Fatalf("insert certificate: %v", err)
+	}
+
+	resp, _ := doRequest(t, app, httptest.NewRequest(http.MethodPost, "/certificates/1/renew", nil))
+
+	if resp.StatusCode != fiber.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", resp.StatusCode)
+	}
+	if location := resp.Header.Get("Location"); location != "/certificates/1" {
+		t.Fatalf("expected detail redirect, got %q", location)
+	}
+
+	var status string
+	if err := database.QueryRow(`SELECT status FROM certificates WHERE id = ?`, 1).Scan(&status); err != nil {
+		t.Fatalf("read certificate status: %v", err)
+	}
+	if status != "failed" {
+		t.Fatalf("expected certificate status failed, got %q", status)
+	}
+
+	var jobStatus string
+	var message string
+	var logOutput string
+	if err := database.QueryRow(`
+		SELECT status, message, log
+		FROM jobs
+		WHERE type = 'renew' AND certificate_id = ?
+	`, 1).Scan(&jobStatus, &message, &logOutput); err != nil {
+		t.Fatalf("read renew job: %v", err)
+	}
+	if jobStatus != "failed" {
+		t.Fatalf("expected failed renew job, got %q", jobStatus)
+	}
+	if !strings.Contains(strings.ToLower(message), "cloudflare") {
+		t.Fatalf("expected failure message to mention cloudflare token, got %q", message)
+	}
+	if !strings.Contains(strings.ToLower(logOutput), "cloudflare") {
+		t.Fatalf("expected failure log to mention cloudflare token, got %q", logOutput)
+	}
+}
+
 func TestEditCertificateRendersEditableDomainsAndSNIsBeforeIssue(t *testing.T) {
 	database, app := testServer(t)
 	_, err := database.Exec(`
@@ -613,6 +673,8 @@ func TestCertificateDetailShowsSyncReadyWorkflowForIssuedCertificate(t *testing.
 		"Issue and sync workflow",
 		"Certificate files are available.",
 		"Certificate already issued",
+		`action="/certificates/1/renew"`,
+		">Renew now<",
 		`action="/certificates/1/sync"`,
 		">Sync to Kong<",
 	} {
@@ -1706,10 +1768,10 @@ func testServer(t *testing.T) (*sql.DB, *fiber.App) {
 	kongTargetRepository := sqliteadapter.NewKongTargetRepository(database)
 	jobRepository := sqliteadapter.NewJobRepository(database)
 	jobUseCase := usecase.NewJobUseCase(jobRepository)
-	acmeClient := acmeadapter.NewLegoClient(filepath.Join(t.TempDir(), "accounts"), "staging", "")
-	acmeUseCase := usecase.NewACMEUseCase(certificateRepository, jobUseCase, acmeClient, filepath.Join(t.TempDir(), "certs"))
 	kongAdminClient := kongadapter.NewAdminClient(nil)
 	kongSyncUseCase := usecase.NewKongSyncUseCase(certificateRepository, kongTargetRepository, jobUseCase, kongAdminClient)
+	acmeClient := acmeadapter.NewLegoClient(filepath.Join(t.TempDir(), "accounts"), "staging", "")
+	acmeUseCase := usecase.NewACMEUseCase(certificateRepository, jobUseCase, acmeClient, filepath.Join(t.TempDir(), "certs"), kongSyncUseCase)
 	kongTargetUseCase := usecase.NewKongTargetUseCase(kongTargetRepository, kongAdminClient, jobUseCase)
 
 	return database, NewApp(nil, certificateUseCase, acmeUseCase, kongSyncUseCase, kongTargetUseCase, jobUseCase)

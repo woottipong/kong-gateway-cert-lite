@@ -10,7 +10,7 @@ epic-04-acme
 backend
 
 ## Status
-planned
+done
 
 ## Priority
 high
@@ -53,17 +53,20 @@ Implement manual certificate renewal and post-renew sync.
 - `internal/web/routes.go`
 
 ## Test Checklist
-- [ ] Run `go test ./...`.
-- [ ] Renew against Let's Encrypt staging.
-- [ ] Verify expiry changes or remains valid.
-- [ ] Verify sync is attempted after renew.
-- [ ] Verify failure logs.
+- [x] Run `go test ./...`.
+- [x] Renew against Let's Encrypt staging.
+- [x] Verify expiry changes or remains valid.
+- [x] Verify sync is attempted after renew.
+- [x] Verify failure logs.
 
 ## Outcome
-Not started.
+Implemented manual certificate renewal through `POST /certificates/{id}/renew`. Renew reads the existing certificate and private key, renews through the ACME client, writes updated certificate files, parses and stores the renewed expiry, records a renew job, and syncs linked Kong targets after successful renew. Failure paths mark the certificate failed and create clear renew job logs.
 
 ## Completion Evidence
-Not completed.
+- `go test ./...` passes.
+- `go test ./internal/usecase -run TestLiveStagingRenewCertificateWithCloudflareDNS01 -v` passed against Let's Encrypt staging on 2026-05-01 for `sandbox2.rtt.in.th` and `*.sandbox2.rtt.in.th`.
+- `TestACMEUseCaseRenewCertificateStoresFilesAndSyncsLinkedTargets` covers renewed file writes, expiry storage, renew job logging, and post-renew Kong sync.
+- `TestRenewCertificateWithoutCloudflareTokenMarksCertificateFailedAndCreatesFailedJob` covers renew failure logging and failed certificate status.
 
 ## Completed At
-Not completed.
+2026-05-01

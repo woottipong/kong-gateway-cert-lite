@@ -352,6 +352,34 @@ func (h *Handler) IssueCertificate(c *fiber.Ctx) error {
 	return c.Redirect("/certificates/"+strconv.FormatInt(id, 10), fiber.StatusSeeOther)
 }
 
+func (h *Handler) RenewCertificate(c *fiber.Ctx) error {
+	id, err := usecase.ParseID(c.Params("id"))
+	if err != nil {
+		return fiber.ErrNotFound
+	}
+
+	if err := h.acme.RenewCertificate(c.UserContext(), id); err != nil {
+		if errors.Is(err, usecase.ErrNotFound) {
+			return fiber.ErrNotFound
+		}
+		return h.serverError(c, "renew certificate", err)
+	}
+
+	flashTone := "success"
+	flashMessage := "Certificate renewed successfully."
+	if certificate, err := h.certificates.Get(c.UserContext(), id); err == nil {
+		if certificate.Certificate.Status == domain.CertificateStatusFailed {
+			flashTone = "danger"
+			flashMessage = "Certificate renew failed. Review certificate state and job logs."
+		} else if certificateHasFailedSync(certificate) {
+			flashTone = "warning"
+			flashMessage = "Certificate renewed, but Kong sync finished with failures."
+		}
+	}
+	h.setFlash(c, flashTone, flashMessage)
+	return c.Redirect("/certificates/"+strconv.FormatInt(id, 10), fiber.StatusSeeOther)
+}
+
 func (h *Handler) UpdateCertificateTargets(c *fiber.Ctx) error {
 	id, err := usecase.ParseID(c.Params("id"))
 	if err != nil {

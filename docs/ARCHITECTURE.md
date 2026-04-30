@@ -103,6 +103,7 @@ GET  /certificates/:id/edit
 GET  /certificates/:id
 POST /certificates/:id
 POST /certificates/:id/issue
+POST /certificates/:id/renew
 POST /certificates/:id/delete
 POST /certificates/:id/targets
 POST /certificates/:id/sync

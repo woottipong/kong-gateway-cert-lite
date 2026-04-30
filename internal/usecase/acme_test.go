@@ -126,10 +126,151 @@ func TestACMEUseCaseIssueCertificateStoresFilesAndMarksActive(t *testing.T) {
 	}
 }
 
+func TestACMEUseCaseRenewCertificateStoresFilesAndSyncsLinkedTargets(t *testing.T) {
+	ctx := context.Background()
+	database, err := db.Open(filepath.Join(t.TempDir(), "app.db"))
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = database.Close()
+	})
+
+	certificateRepository := sqliteadapter.NewCertificateRepository(database)
+	kongTargetRepository := sqliteadapter.NewKongTargetRepository(database)
+	jobRepository := sqliteadapter.NewJobRepository(database)
+	jobUseCase := NewJobUseCase(jobRepository)
+
+	oldExpiresAt := time.Now().UTC().Add(48 * time.Hour).Truncate(time.Second)
+	renewedExpiresAt := time.Now().UTC().Add(45 * 24 * time.Hour).Truncate(time.Second)
+	oldCertificatePEM, oldPrivateKeyPEM := issuedCertificateFixture(t, oldExpiresAt)
+	renewedCertificatePEM, renewedPrivateKeyPEM := issuedCertificateFixture(t, renewedExpiresAt)
+
+	fakeACMEClient := &fakeACMEIssueClient{
+		renewResult: ACMEIssueResult{
+			FullChainPEM:  renewedCertificatePEM,
+			PrivateKeyPEM: renewedPrivateKeyPEM,
+		},
+	}
+	fakeKongClient := &fakeKongCertificateSyncClient{
+		kongCertificateID: "kong-cert-renewed",
+		detail:            "updated certificate in kong",
+	}
+
+	certificateID, err := certificateRepository.Create(ctx, domain.Certificate{
+		Name:            "Renewed wildcard",
+		PrimaryDomain:   "caption.rtt.in.th",
+		Domains:         []string{"caption.rtt.in.th", "*.caption.rtt.in.th"},
+		Email:           "ops@rtt.in.th",
+		SNIs:            []string{"caption.rtt.in.th", "*.caption.rtt.in.th"},
+		AutoRenew:       true,
+		RenewBeforeDays: 30,
+		Status:          domain.CertificateStatusPending,
+	})
+	if err != nil {
+		t.Fatalf("create certificate: %v", err)
+	}
+
+	certDir := filepath.Join(t.TempDir(), "certs")
+	oldCertDir := filepath.Join(certDir, "old")
+	if err := os.MkdirAll(oldCertDir, 0o755); err != nil {
+		t.Fatalf("create old cert dir: %v", err)
+	}
+	oldCertPath := filepath.Join(oldCertDir, "fullchain.pem")
+	oldKeyPath := filepath.Join(oldCertDir, "privkey.pem")
+	if err := os.WriteFile(oldCertPath, oldCertificatePEM, 0o600); err != nil {
+		t.Fatalf("write old certificate: %v", err)
+	}
+	if err := os.WriteFile(oldKeyPath, oldPrivateKeyPEM, 0o600); err != nil {
+		t.Fatalf("write old key: %v", err)
+	}
+	if err := certificateRepository.MarkIssued(ctx, certificateID, oldCertPath, oldKeyPath, oldExpiresAt); err != nil {
+		t.Fatalf("mark issued certificate: %v", err)
+	}
+
+	targetID, err := kongTargetRepository.Create(ctx, domain.KongTarget{
+		Name:        "Production Kong",
+		Environment: "production",
+		AdminURL:    "https://kong-admin.internal:8444",
+		AuthType:    domain.KongTargetAuthTypeNone,
+		Status:      domain.KongTargetStatusOnline,
+	})
+	if err != nil {
+		t.Fatalf("create kong target: %v", err)
+	}
+	if err := certificateRepository.SetLinkedTargets(ctx, certificateID, []int64{targetID}); err != nil {
+		t.Fatalf("link kong target: %v", err)
+	}
+
+	kongSyncUseCase := NewKongSyncUseCase(certificateRepository, kongTargetRepository, jobUseCase, fakeKongClient)
+	acmeUseCase := NewACMEUseCase(certificateRepository, jobUseCase, fakeACMEClient, certDir, kongSyncUseCase)
+
+	if err := acmeUseCase.RenewCertificate(ctx, certificateID); err != nil {
+		t.Fatalf("renew certificate: %v", err)
+	}
+
+	stored, err := certificateRepository.Get(ctx, certificateID)
+	if err != nil {
+		t.Fatalf("get certificate: %v", err)
+	}
+	if stored.Status != domain.CertificateStatusActive {
+		t.Fatalf("expected active certificate status, got %q", stored.Status)
+	}
+	if stored.ExpiresAt == nil || !stored.ExpiresAt.UTC().Equal(renewedExpiresAt) {
+		t.Fatalf("expected renewed expiry %s, got %v", renewedExpiresAt.Format(time.RFC3339), stored.ExpiresAt)
+	}
+	if stored.CertPath == oldCertPath {
+		t.Fatal("expected renewed certificate path to replace the previous path")
+	}
+	storedCertificatePEM, err := os.ReadFile(stored.CertPath)
+	if err != nil {
+		t.Fatalf("read renewed certificate: %v", err)
+	}
+	if string(storedCertificatePEM) != string(renewedCertificatePEM) {
+		t.Fatal("stored renewed certificate PEM does not match ACME result")
+	}
+	if fakeACMEClient.renewRequest.Email != "ops@rtt.in.th" {
+		t.Fatalf("expected renew request email to be forwarded, got %q", fakeACMEClient.renewRequest.Email)
+	}
+	if string(fakeACMEClient.renewRequest.ExistingFullChainPEM) != string(oldCertificatePEM) {
+		t.Fatal("expected existing certificate PEM to be sent to ACME renew client")
+	}
+	if fakeKongClient.calls != 1 {
+		t.Fatalf("expected one Kong sync call after renew, got %d", fakeKongClient.calls)
+	}
+	if fakeKongClient.certPEM != string(renewedCertificatePEM) {
+		t.Fatal("expected Kong sync to use renewed certificate PEM")
+	}
+
+	jobs, err := jobRepository.List(ctx)
+	if err != nil {
+		t.Fatalf("list jobs: %v", err)
+	}
+	var sawRenewJob bool
+	var sawSyncJob bool
+	for _, job := range jobs {
+		if job.Type == domain.JobTypeRenew && job.Status == domain.JobStatusSuccess {
+			sawRenewJob = true
+		}
+		if job.Type == domain.JobTypeSync && job.Status == domain.JobStatusSuccess {
+			sawSyncJob = true
+		}
+	}
+	if !sawRenewJob {
+		t.Fatal("expected successful renew job")
+	}
+	if !sawSyncJob {
+		t.Fatal("expected successful sync job after renew")
+	}
+}
+
 type fakeACMEIssueClient struct {
-	request ACMEIssueRequest
-	result  ACMEIssueResult
-	err     error
+	request      ACMEIssueRequest
+	renewRequest ACMERenewRequest
+	result       ACMEIssueResult
+	renewResult  ACMEIssueResult
+	err          error
+	renewErr     error
 }
 
 func (f *fakeACMEIssueClient) Issue(ctx context.Context, request ACMEIssueRequest) (ACMEIssueResult, error) {
@@ -139,6 +280,34 @@ func (f *fakeACMEIssueClient) Issue(ctx context.Context, request ACMEIssueReques
 		return ACMEIssueResult{}, f.err
 	}
 	return f.result, nil
+}
+
+func (f *fakeACMEIssueClient) Renew(ctx context.Context, request ACMERenewRequest) (ACMEIssueResult, error) {
+	_ = ctx
+	f.renewRequest = request
+	if f.renewErr != nil {
+		return ACMEIssueResult{}, f.renewErr
+	}
+	return f.renewResult, nil
+}
+
+type fakeKongCertificateSyncClient struct {
+	calls             int
+	certPEM           string
+	kongCertificateID string
+	detail            string
+	err               error
+}
+
+func (f *fakeKongCertificateSyncClient) SyncCertificate(ctx context.Context, target domain.KongTarget, existingKongCertificateID string, certPEM string, keyPEM string, snis []string) (string, string, error) {
+	_ = ctx
+	_ = target
+	_ = existingKongCertificateID
+	_ = keyPEM
+	_ = snis
+	f.calls++
+	f.certPEM = certPEM
+	return f.kongCertificateID, f.detail, f.err
 }
 
 func issuedCertificateFixture(t *testing.T, expiresAt time.Time) ([]byte, []byte) {

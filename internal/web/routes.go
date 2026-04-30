@@ -32,6 +32,7 @@ func NewApp(logger *slog.Logger, certificates *usecase.CertificateUseCase, acme 
 	app.Get("/certificates/:id", handler.CertificateDetail)
 	app.Post("/certificates/:id", handler.UpdateCertificate)
 	app.Post("/certificates/:id/issue", handler.IssueCertificate)
+	app.Post("/certificates/:id/renew", handler.RenewCertificate)
 	app.Post("/certificates/:id/delete", handler.DeleteCertificate)
 	app.Post("/certificates/:id/targets", handler.UpdateCertificateTargets)
 	app.Post("/certificates/:id/sync", handler.SyncCertificate)

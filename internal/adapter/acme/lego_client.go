@@ -115,6 +115,78 @@ func (c *LegoClient) Issue(ctx context.Context, request usecase.ACMEIssueRequest
 	}, nil
 }
 
+func (c *LegoClient) Renew(ctx context.Context, request usecase.ACMERenewRequest) (usecase.ACMEIssueResult, error) {
+	if err := ctx.Err(); err != nil {
+		return usecase.ACMEIssueResult{}, fmt.Errorf("renew cancelled before DNS challenge: %w", err)
+	}
+
+	if strings.TrimSpace(c.cloudflareToken) == "" {
+		return usecase.ACMEIssueResult{}, fmt.Errorf("cloudflare dns api token is not configured")
+	}
+	if strings.TrimSpace(request.Email) == "" {
+		return usecase.ACMEIssueResult{}, fmt.Errorf("acme account email is required")
+	}
+	if len(request.Domains) == 0 {
+		return usecase.ACMEIssueResult{}, fmt.Errorf("at least one domain is required for renew")
+	}
+	if len(request.ExistingFullChainPEM) == 0 {
+		return usecase.ACMEIssueResult{}, fmt.Errorf("existing certificate is required for renew")
+	}
+
+	user, accountPath, err := c.loadOrCreateUser(request.Email)
+	if err != nil {
+		return usecase.ACMEIssueResult{}, err
+	}
+
+	config := lego.NewConfig(user)
+	config.CADirURL = c.caDirectoryURL()
+	config.Certificate.KeyType = certcrypto.RSA2048
+
+	client, err := lego.NewClient(config)
+	if err != nil {
+		return usecase.ACMEIssueResult{}, fmt.Errorf("create lego client: %w", err)
+	}
+
+	providerConfig := cloudflare.NewDefaultConfig()
+	providerConfig.AuthToken = c.cloudflareToken
+	providerConfig.ZoneToken = c.cloudflareToken
+	provider, err := cloudflare.NewDNSProviderConfig(providerConfig)
+	if err != nil {
+		return usecase.ACMEIssueResult{}, fmt.Errorf("configure cloudflare dns provider: %w", err)
+	}
+	if err := client.Challenge.SetDNS01Provider(provider); err != nil {
+		return usecase.ACMEIssueResult{}, fmt.Errorf("configure dns challenge: %w", err)
+	}
+
+	if user.Registration == nil {
+		registrationResource, err := client.Registration.ResolveAccountByKey()
+		if err != nil {
+			registrationResource, err = client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
+			if err != nil {
+				return usecase.ACMEIssueResult{}, fmt.Errorf("register acme account: %w", err)
+			}
+		}
+		user.Registration = registrationResource
+		if err := saveAccount(accountPath, user); err != nil {
+			return usecase.ACMEIssueResult{}, err
+		}
+	}
+
+	resource, err := client.Certificate.Renew(certificate.Resource{
+		Domain:      request.Domains[0],
+		Certificate: request.ExistingFullChainPEM,
+		PrivateKey:  request.ExistingPrivateKeyPEM,
+	}, true, false, "")
+	if err != nil {
+		return usecase.ACMEIssueResult{}, fmt.Errorf("renew certificate: %w", err)
+	}
+
+	return usecase.ACMEIssueResult{
+		FullChainPEM:  resource.Certificate,
+		PrivateKeyPEM: resource.PrivateKey,
+	}, nil
+}
+
 func (c *LegoClient) caDirectoryURL() string {
 	if strings.EqualFold(strings.TrimSpace(c.letsEncryptEnv), "production") {
 		return letsEncryptProductionURL

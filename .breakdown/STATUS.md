@@ -4,20 +4,20 @@
 
 Phase 1 - Foundation.
 
-Certificate CRUD UI, Kong target CRUD UI, job log UI, Kong connectivity testing, certificate sync, and manual ACME issue are implemented. Live ACME verification is still pending.
+Certificate CRUD UI, Kong target CRUD UI, job log UI, Kong connectivity testing, certificate sync, manual ACME issue, and manual renew are implemented. ACME issue and renew are verified against Let's Encrypt staging.
 
 ## Overall Progress
 
 ```text
-MVP progress: 8 / 12 feature tasks done, plus 1 refactor task done
-Current status: Manual ACME issue implemented, pending live verification
+MVP progress: 10 / 12 feature tasks done, plus 1 refactor task done
+Current status: Manual renew verified against Let's Encrypt staging
 ```
 
 ## Current Priorities
 
-1. Verify `task-009-acme-certificate-issue` against a live Let's Encrypt environment with valid Cloudflare credentials.
-2. Reuse the manual issue and sync flow as the basis for manual renew.
-3. Keep manual renew queued until ACME issue is verified.
+1. Implement `task-011-auto-renew-scheduler`.
+2. Reuse the verified manual renew path for scheduled renewal.
+3. Keep Docker Compose hardening queued until renewal flow is complete.
 
 ## Blockers
 
@@ -37,23 +37,21 @@ No blockers recorded.
 
 ### Current Status Snapshot
 
-- `✅ done`: task-001-project-scaffold, task-002-database-schema, task-003-bootstrap-layout, task-004-certificate-crud-ui, task-004.5-migrate-web-adapter-to-fiber, task-005-kong-target-crud-ui, task-006-job-log-ui, task-007-kong-target-test, task-008-kong-certificate-sync
-- `🚧 in progress`: task-009-acme-certificate-issue
-- `🎯 next up`: task-009-acme-certificate-issue verification
+- `✅ done`: task-001-project-scaffold, task-002-database-schema, task-003-bootstrap-layout, task-004-certificate-crud-ui, task-004.5-migrate-web-adapter-to-fiber, task-005-kong-target-crud-ui, task-006-job-log-ui, task-007-kong-target-test, task-008-kong-certificate-sync, task-009-acme-certificate-issue, task-010-manual-renew
+- `🚧 in progress`: none
+- `🎯 next up`: task-011-auto-renew-scheduler
 - `⛔ blocked`: none
 
 ### In Progress
 
-- `🚧` task-009-acme-certificate-issue
+- None
 
 ### Ready To Start
 
-- None
+- `📝` task-011-auto-renew-scheduler
 
 ### Backlog
 
-- `📝` task-010-manual-renew
-- `📝` task-011-auto-renew-scheduler
 - `📝` task-012-docker-compose-hardening
 
 ### Phase 1 - Foundation
@@ -84,8 +82,8 @@ No blockers recorded.
 
 | Task | Area | Priority | Status |
 |------|------|----------|--------|
-| task-009-acme-certificate-issue | backend | high | 🚧 in progress |
-| task-010-manual-renew | backend | high | 📝 planned |
+| task-009-acme-certificate-issue | backend | high | ✅ done |
+| task-010-manual-renew | backend | high | ✅ done |
 
 ### Phase 5 - Renewal and Hardening
 

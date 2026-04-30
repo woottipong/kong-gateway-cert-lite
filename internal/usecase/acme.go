@@ -26,6 +26,13 @@ type ACMEIssueRequest struct {
 	Domains []string
 }
 
+type ACMERenewRequest struct {
+	Email                 string
+	Domains               []string
+	ExistingFullChainPEM  []byte
+	ExistingPrivateKeyPEM []byte
+}
+
 type ACMEIssueResult struct {
 	FullChainPEM  []byte
 	PrivateKeyPEM []byte
@@ -33,6 +40,7 @@ type ACMEIssueResult struct {
 
 type ACMEIssueClient interface {
 	Issue(ctx context.Context, request ACMEIssueRequest) (ACMEIssueResult, error)
+	Renew(ctx context.Context, request ACMERenewRequest) (ACMEIssueResult, error)
 }
 
 type ACMEUseCase struct {
@@ -40,15 +48,20 @@ type ACMEUseCase struct {
 	jobs         *JobUseCase
 	client       ACMEIssueClient
 	certDir      string
+	kongSync     *KongSyncUseCase
 }
 
-func NewACMEUseCase(certificates IssueCertificateRepository, jobs *JobUseCase, client ACMEIssueClient, certDir string) *ACMEUseCase {
-	return &ACMEUseCase{
+func NewACMEUseCase(certificates IssueCertificateRepository, jobs *JobUseCase, client ACMEIssueClient, certDir string, kongSync ...*KongSyncUseCase) *ACMEUseCase {
+	uc := &ACMEUseCase{
 		certificates: certificates,
 		jobs:         jobs,
 		client:       client,
 		certDir:      certDir,
 	}
+	if len(kongSync) > 0 {
+		uc.kongSync = kongSync[0]
+	}
+	return uc
 }
 
 func (uc *ACMEUseCase) IssueCertificate(ctx context.Context, certificateID int64) error {
@@ -115,6 +128,81 @@ func (uc *ACMEUseCase) IssueCertificate(ctx context.Context, certificateID int64
 	return nil
 }
 
+func (uc *ACMEUseCase) RenewCertificate(ctx context.Context, certificateID int64) error {
+	if uc.certificates == nil || uc.jobs == nil || uc.client == nil {
+		return fmt.Errorf("acme renew dependencies are not configured")
+	}
+
+	certificate, err := uc.certificates.Get(ctx, certificateID)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+
+	jobID, err := uc.jobs.Create(ctx, JobInput{
+		CertificateID: &certificate.ID,
+		Type:          string(domain.JobTypeRenew),
+		Message:       "Renewing certificate via Let's Encrypt",
+		Log:           "Starting ACME DNS-01 renew for " + strings.Join(certificate.Domains, ", "),
+	})
+	if err != nil {
+		return err
+	}
+
+	existingFullChainPEM, existingPrivateKeyPEM, err := readExistingCertificateFiles(certificate.CertPath, certificate.KeyPath)
+	if err != nil {
+		return uc.failRenew(ctx, certificate.ID, jobID, err)
+	}
+
+	result, renewErr := uc.client.Renew(ctx, ACMERenewRequest{
+		Email:                 certificate.Email,
+		Domains:               certificate.Domains,
+		ExistingFullChainPEM:  existingFullChainPEM,
+		ExistingPrivateKeyPEM: existingPrivateKeyPEM,
+	})
+	if renewErr != nil {
+		return uc.failRenew(ctx, certificate.ID, jobID, renewErr)
+	}
+
+	certPath, keyPath, err := uc.writeIssuedFiles(certificate.ID, result.FullChainPEM, result.PrivateKeyPEM)
+	if err != nil {
+		return uc.failRenew(ctx, certificate.ID, jobID, err)
+	}
+
+	expiresAt, err := parseCertificateExpiry(result.FullChainPEM)
+	if err != nil {
+		return uc.failRenew(ctx, certificate.ID, jobID, err)
+	}
+
+	if err := uc.certificates.MarkIssued(ctx, certificate.ID, certPath, keyPath, expiresAt); err != nil {
+		return err
+	}
+
+	logOutput := strings.Join([]string{
+		"Renewed certificate for " + strings.Join(certificate.Domains, ", "),
+		"Saved fullchain to " + certPath,
+		"Saved private key to " + keyPath,
+		"Expires at " + expiresAt.UTC().Format(time.RFC3339),
+	}, "\n")
+
+	if err := uc.jobs.Complete(ctx, JobCompleteInput{
+		ID:      jobID,
+		Status:  string(domain.JobStatusSuccess),
+		Message: "Certificate renewed successfully",
+		Log:     logOutput,
+	}); err != nil {
+		return err
+	}
+
+	if uc.kongSync != nil {
+		return uc.kongSync.SyncCertificate(ctx, certificate.ID)
+	}
+
+	return nil
+}
+
 func (uc *ACMEUseCase) failIssue(ctx context.Context, certificateID int64, jobID int64, cause error) error {
 	// Always attempt both operations so the job is never left in a running state.
 	// Combine any persistence errors with errors.Join rather than returning early.
@@ -133,6 +221,50 @@ func (uc *ACMEUseCase) failIssue(ctx context.Context, certificateID int64, jobID
 	})
 
 	return errors.Join(statusErr, jobErr)
+}
+
+func (uc *ACMEUseCase) failRenew(ctx context.Context, certificateID int64, jobID int64, cause error) error {
+	statusErr := uc.certificates.UpdateStatus(ctx, certificateID, domain.CertificateStatusFailed)
+
+	logOutput := strings.Join([]string{
+		"Certificate renew failed",
+		cause.Error(),
+	}, "\n")
+
+	jobErr := uc.jobs.Complete(ctx, JobCompleteInput{
+		ID:      jobID,
+		Status:  string(domain.JobStatusFailed),
+		Message: cause.Error(),
+		Log:     logOutput,
+	})
+
+	return errors.Join(statusErr, jobErr)
+}
+
+func readExistingCertificateFiles(certPath string, keyPath string) ([]byte, []byte, error) {
+	certPEM, err := readExistingCertificateFile(certPath, "certificate")
+	if err != nil {
+		return nil, nil, err
+	}
+	keyPEM, err := readExistingCertificateFile(keyPath, "private key")
+	if err != nil {
+		return nil, nil, err
+	}
+	return certPEM, keyPEM, nil
+}
+
+func readExistingCertificateFile(path string, label string) ([]byte, error) {
+	if strings.TrimSpace(path) == "" {
+		return nil, fmt.Errorf("missing existing %s file path", label)
+	}
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("missing existing %s file: %s", label, path)
+		}
+		return nil, fmt.Errorf("read existing %s file %s: %w", label, path, err)
+	}
+	return bytes, nil
 }
 
 func (uc *ACMEUseCase) writeIssuedFiles(certificateID int64, fullChainPEM []byte, privateKeyPEM []byte) (string, string, error) {
