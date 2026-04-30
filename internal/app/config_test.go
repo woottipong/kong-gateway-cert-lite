@@ -37,6 +37,9 @@ func TestLoadConfigUsesDefaultAddrWhenEnvMissing(t *testing.T) {
 	if cfg.LetsEncryptEnv != defaultLetsEncryptEnv {
 		t.Fatalf("expected default letsencrypt env %q, got %q", defaultLetsEncryptEnv, cfg.LetsEncryptEnv)
 	}
+	if cfg.AutoRenewCron != defaultAutoRenewCron {
+		t.Fatalf("expected default auto renew cron %q, got %q", defaultAutoRenewCron, cfg.AutoRenewCron)
+	}
 }
 
 func TestLoadConfigRejectsEmptyAddr(t *testing.T) {
@@ -110,5 +113,20 @@ func TestConfigValidateRejectsInvalidLetsEncryptEnv(t *testing.T) {
 
 	if err := cfg.Validate(); err == nil {
 		t.Fatal("expected invalid letsencrypt env validation error")
+	}
+}
+
+func TestConfigValidateRejectsInvalidAutoRenewCron(t *testing.T) {
+	cfg := Config{
+		Addr:           ":8080",
+		DBPath:         "/tmp/app.db",
+		CertDir:        "/tmp/certs",
+		AccountDir:     "/tmp/accounts",
+		LetsEncryptEnv: "staging",
+		AutoRenewCron:  "not a cron",
+	}
+
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected invalid auto renew cron validation error")
 	}
 }

@@ -10,7 +10,7 @@ epic-05-renewal
 backend
 
 ## Status
-planned
+done
 
 ## Priority
 high
@@ -49,16 +49,19 @@ Add scheduled auto renewal for certificates that are close to expiry.
 - `internal/app/config.go`
 
 ## Test Checklist
-- [ ] Run `go test ./...`.
-- [ ] Test renewal window logic.
-- [ ] Test invalid cron config.
-- [ ] Run scheduler with a short test cron or direct trigger.
+- [x] Run `go test ./...`.
+- [x] Test renewal window logic.
+- [x] Test invalid cron config.
+- [x] Run scheduler with a short test cron or direct trigger.
 
 ## Outcome
-Not started.
+Implemented the auto renew scheduler. The app now reads and validates `AUTO_RENEW_CRON`, starts an internal renewal scheduler with the application, filters auto-renew certificates by renewal window, and calls the verified manual renew path so renewed certificates are synced to linked Kong targets and renew/sync job logs are recorded.
 
 ## Completion Evidence
-Not completed.
+- `go test ./...` passes.
+- `TestRenewalSchedulerRunOnceRenewsOnlyCertificatesInsideWindow` covers direct scheduler trigger and renewal window selection.
+- `TestParseCronExpressionRejectsInvalidConfig` and `TestConfigValidateRejectsInvalidAutoRenewCron` cover invalid cron handling.
+- Manual renew tests from task 010 cover renewed file writes, expiry updates, post-renew sync, and renew failure logs used by scheduler-triggered renewals.
 
 ## Completed At
-Not completed.
+2026-05-01

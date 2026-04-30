@@ -81,7 +81,7 @@ APP_CERT_DIR       Default: /data/certs
 APP_ACCOUNT_DIR    Default: /data/accounts
 CF_DNS_API_TOKEN   Required for ACME issue
 LETSENCRYPT_ENV    Default: staging
-AUTO_RENEW_CRON
+AUTO_RENEW_CRON    Default: 0 3 * * *
 ```
 
 ## Development

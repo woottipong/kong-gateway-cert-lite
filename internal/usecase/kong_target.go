@@ -221,6 +221,8 @@ func validateKongTargetInput(input KongTargetInput, allowExistingSecret bool) (d
 		fields["admin_url"] = "Admin API URL is required."
 	} else if parsed, err := url.ParseRequestURI(target.AdminURL); err != nil || parsed.Scheme == "" || parsed.Host == "" {
 		fields["admin_url"] = "Enter a valid Admin API URL."
+	} else if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		fields["admin_url"] = "Admin API URL must start with http:// or https://."
 	}
 
 	switch target.AuthType {
@@ -230,6 +232,8 @@ func validateKongTargetInput(input KongTargetInput, allowExistingSecret bool) (d
 	case domain.KongTargetAuthTypeCustomHeader:
 		if target.AuthHeaderName == "" {
 			fields["auth_header_name"] = "Header name is required for custom-header auth."
+		} else if !isHTTPHeaderName(target.AuthHeaderName) {
+			fields["auth_header_name"] = "Enter a valid HTTP header name."
 		}
 		if target.AuthHeaderValue == "" && !allowExistingSecret {
 			fields["auth_header_value"] = "Header value is required for custom-header auth."
@@ -243,6 +247,23 @@ func validateKongTargetInput(input KongTargetInput, allowExistingSecret bool) (d
 	}
 
 	return target, nil
+}
+
+func isHTTPHeaderName(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, char := range value {
+		switch {
+		case char >= 'A' && char <= 'Z':
+		case char >= 'a' && char <= 'z':
+		case char >= '0' && char <= '9':
+		case strings.ContainsRune("!#$%&'*+-.^_`|~", char):
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 func buildKongTargetView(target domain.KongTarget) KongTargetView {

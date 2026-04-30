@@ -4,20 +4,20 @@
 
 Phase 1 - Foundation.
 
-Certificate CRUD UI, Kong target CRUD UI, job log UI, Kong connectivity testing, certificate sync, manual ACME issue, and manual renew are implemented. ACME issue and renew are verified against Let's Encrypt staging.
+Certificate CRUD UI, Kong target CRUD UI, job log UI, Kong connectivity testing, certificate sync, manual ACME issue, manual renew, and auto renew scheduler are implemented. ACME issue and renew are verified against Let's Encrypt staging.
 
 ## Overall Progress
 
 ```text
-MVP progress: 10 / 12 feature tasks done, plus 1 refactor task done
-Current status: Manual renew verified against Let's Encrypt staging
+MVP progress: 11 / 12 feature tasks done, plus 1 refactor task done
+Current status: Auto renew scheduler implemented
 ```
 
 ## Current Priorities
 
-1. Implement `task-011-auto-renew-scheduler`.
-2. Reuse the verified manual renew path for scheduled renewal.
-3. Keep Docker Compose hardening queued until renewal flow is complete.
+1. Implement `task-012-docker-compose-hardening`.
+2. Review secret handling for Cloudflare and Kong credentials.
+3. Prepare deployment hardening for the verified ACME and renewal flows.
 
 ## Blockers
 
@@ -37,9 +37,9 @@ No blockers recorded.
 
 ### Current Status Snapshot
 
-- `✅ done`: task-001-project-scaffold, task-002-database-schema, task-003-bootstrap-layout, task-004-certificate-crud-ui, task-004.5-migrate-web-adapter-to-fiber, task-005-kong-target-crud-ui, task-006-job-log-ui, task-007-kong-target-test, task-008-kong-certificate-sync, task-009-acme-certificate-issue, task-010-manual-renew
+- `✅ done`: task-001-project-scaffold, task-002-database-schema, task-003-bootstrap-layout, task-004-certificate-crud-ui, task-004.5-migrate-web-adapter-to-fiber, task-005-kong-target-crud-ui, task-006-job-log-ui, task-007-kong-target-test, task-008-kong-certificate-sync, task-009-acme-certificate-issue, task-010-manual-renew, task-011-auto-renew-scheduler
 - `🚧 in progress`: none
-- `🎯 next up`: task-011-auto-renew-scheduler
+- `🎯 next up`: task-012-docker-compose-hardening
 - `⛔ blocked`: none
 
 ### In Progress
@@ -48,11 +48,11 @@ No blockers recorded.
 
 ### Ready To Start
 
-- `📝` task-011-auto-renew-scheduler
+- `📝` task-012-docker-compose-hardening
 
 ### Backlog
 
-- `📝` task-012-docker-compose-hardening
+- None
 
 ### Phase 1 - Foundation
 
@@ -89,7 +89,7 @@ No blockers recorded.
 
 | Task | Area | Priority | Status |
 |------|------|----------|--------|
-| task-011-auto-renew-scheduler | backend | high | 📝 planned |
+| task-011-auto-renew-scheduler | backend | high | ✅ done |
 | task-012-docker-compose-hardening | infra/docs | medium | 📝 planned |
 
 ## Definition of Done

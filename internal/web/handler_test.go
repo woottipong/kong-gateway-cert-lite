@@ -885,6 +885,34 @@ func TestCreateKongTargetValidationErrors(t *testing.T) {
 	}
 }
 
+func TestCreateKongTargetRejectsUnsafeURLAndHeaderName(t *testing.T) {
+	_, app := testServer(t)
+	form := url.Values{
+		"name":              {"Production Kong"},
+		"environment":       {"production"},
+		"admin_url":         {"ftp://kong-admin.internal"},
+		"auth_type":         {"custom-header"},
+		"auth_header_name":  {"Bad Header"},
+		"auth_header_value": {"secret"},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/kong-targets", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, body := doRequest(t, app, req)
+
+	if resp.StatusCode != fiber.StatusUnprocessableEntity {
+		t.Fatalf("expected status 422, got %d", resp.StatusCode)
+	}
+	for _, want := range []string{
+		"Admin API URL must start with http:// or https://.",
+		"Enter a valid HTTP header name.",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected validation body to contain %q", want)
+		}
+	}
+}
+
 func TestEditKongTargetDoesNotRenderSecretValue(t *testing.T) {
 	database, app := testServer(t)
 	_, err := database.Exec(`
