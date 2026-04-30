@@ -145,7 +145,27 @@ Local Docker development uses `compose.dev.yaml` and `Dockerfile.dev`.
 - Go module and build caches use named volumes to avoid repeated dependency downloads.
 - The app uses the default `:8080` bind address in Docker dev and maps port `8080` to the host.
 
-The development container is intentionally separate from future production hardening. Production Docker Compose concerns remain in the later hardening task.
+The development container is intentionally separate from the production Docker packaging.
+
+### Production Runtime
+
+Production-style Docker packaging uses `Dockerfile` and `docker-compose.yml`.
+
+- The image is built as a multi-stage Go build and runs on a distroless Debian runtime as `nonroot`.
+- `/data` is mounted from a named volume and stores SQLite metadata, issued certificate/key files, and ACME account data.
+- The image includes a small `/healthcheck` binary that calls `GET /healthz` without requiring curl or a shell in the runtime image.
+- `CF_DNS_API_TOKEN` is injected through environment variables and must not be committed to source control.
+- Kong custom header values are used only for outbound Admin API requests and are not rendered in UI templates or job logs.
+
+Backup and restore must include all of `/data`:
+
+```text
+/data/app.db
+/data/certs
+/data/accounts
+```
+
+Backups contain TLS private keys and ACME account material, so they must be handled as secrets.
 
 ### Certificate Use Case
 

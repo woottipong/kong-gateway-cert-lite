@@ -1,0 +1,28 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kong-cert-lite:local
+    restart: unless-stopped
+    environment:
+      APP_ADDR: :8080
+      APP_DB_PATH: /data/app.db
+      APP_CERT_DIR: /data/certs
+      APP_ACCOUNT_DIR: /data/accounts
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:?Set CF_DNS_API_TOKEN for Cloudflare DNS-01}
+      LETSENCRYPT_ENV: ${LETSENCRYPT_ENV:-staging}
+      AUTO_RENEW_CRON: ${AUTO_RENEW_CRON:-0 3 * * *}
+    ports:
+      - "8080:8080"
+    volumes:
+      - kong-cert-data:/data
+    healthcheck:
+      test: [ "CMD", "/healthcheck", "http://127.0.0.1:8080/healthz" ]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  kong-cert-data:

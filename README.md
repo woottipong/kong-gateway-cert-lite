@@ -15,11 +15,17 @@ The current implementation has:
 - Job list/detail pages backed by SQLite
 - Linked Kong target selection per certificate
 - Manual ACME issue flow through `lego` + Cloudflare DNS-01
+- Manual certificate renew flow
 - Manual certificate sync to linked Kong targets
-
-Manual renew, auto renew, and scheduler work remain in later breakdown tasks.
+- Auto renew scheduler through `AUTO_RENEW_CRON`
 
 ## Quick Start
+
+Production-like Docker Compose:
+
+```bash
+CF_DNS_API_TOKEN=your_token docker compose up --build
+```
 
 Docker dev with hot reload:
 
@@ -56,6 +62,7 @@ GET  /certificates/:id/edit
 GET  /certificates/:id
 POST /certificates/:id
 POST /certificates/:id/issue
+POST /certificates/:id/renew
 POST /certificates/:id/delete
 POST /certificates/:id/targets
 POST /certificates/:id/sync
@@ -79,10 +86,87 @@ APP_ADDR           Default: :8080
 APP_DB_PATH        Default: /data/app.db
 APP_CERT_DIR       Default: /data/certs
 APP_ACCOUNT_DIR    Default: /data/accounts
-CF_DNS_API_TOKEN   Required for ACME issue
+CF_DNS_API_TOKEN   Required for ACME issue and renew
 LETSENCRYPT_ENV    Default: staging
 AUTO_RENEW_CRON    Default: 0 3 * * *
 ```
+
+`LETSENCRYPT_ENV` must be `staging` or `production`. Keep `staging` until a deployment has been tested end to end.
+
+`AUTO_RENEW_CRON` uses a 5-field cron expression in UTC:
+
+```text
+minute hour day month weekday
+```
+
+The default `0 3 * * *` checks renewal windows every day at 03:00 UTC.
+
+## Production Docker Compose
+
+The production image is built from `Dockerfile` and runs as a non-root user on a distroless Debian runtime. Runtime state is mounted at `/data` through the `kong-cert-data` named volume.
+
+```bash
+CF_DNS_API_TOKEN=your_token \
+LETSENCRYPT_ENV=staging \
+AUTO_RENEW_CRON="0 3 * * *" \
+docker compose up --build
+```
+
+Open:
+
+```text
+http://127.0.0.1:8080/certificates
+```
+
+Check health:
+
+```bash
+docker compose ps
+docker compose exec app /healthcheck http://127.0.0.1:8080/healthz
+```
+
+Persistent paths inside the container:
+
+```text
+/data/app.db
+/data/certs
+/data/accounts
+```
+
+### Backup And Restore
+
+Back up the named volume:
+
+```bash
+docker run --rm \
+  -v kong-cert-lite_kong-cert-data:/data:ro \
+  -v "$PWD:/backup" \
+  busybox \
+  tar czf /backup/kong-cert-data-backup.tgz -C /data .
+```
+
+Restore into a fresh named volume:
+
+```bash
+docker compose down
+docker volume rm kong-cert-lite_kong-cert-data
+docker volume create kong-cert-lite_kong-cert-data
+docker run --rm \
+  -v kong-cert-lite_kong-cert-data:/data \
+  -v "$PWD:/backup:ro" \
+  busybox \
+  tar xzf /backup/kong-cert-data-backup.tgz -C /data
+docker compose up --build
+```
+
+The backup includes the SQLite database, issued certificate files, private keys, and ACME account data. Treat backups as sensitive secrets.
+
+### Secret Handling
+
+- Provide `CF_DNS_API_TOKEN` through the environment, not in committed files.
+- Kong custom header values are stored in SQLite for runtime use but are not rendered in the UI.
+- Job logs include file paths and API status details, not certificate private key material or Kong custom header values.
+- Restrict access to `/data` backups because they contain private keys and ACME account material.
 
 ## Development
 

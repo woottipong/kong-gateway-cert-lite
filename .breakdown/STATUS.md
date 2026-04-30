@@ -4,20 +4,20 @@
 
 Phase 1 - Foundation.
 
-Certificate CRUD UI, Kong target CRUD UI, job log UI, Kong connectivity testing, certificate sync, manual ACME issue, manual renew, and auto renew scheduler are implemented. ACME issue and renew are verified against Let's Encrypt staging.
+Certificate CRUD UI, Kong target CRUD UI, job log UI, Kong connectivity testing, certificate sync, manual ACME issue, manual renew, auto renew scheduler, and Docker Compose hardening are implemented. ACME issue and renew are verified against Let's Encrypt staging.
 
 ## Overall Progress
 
 ```text
-MVP progress: 11 / 12 feature tasks done, plus 1 refactor task done
-Current status: Auto renew scheduler implemented
+MVP progress: 12 / 12 feature tasks done, plus 1 refactor task done
+Current status: MVP feature tasks completed
 ```
 
 ## Current Priorities
 
-1. Implement `task-012-docker-compose-hardening`.
-2. Review secret handling for Cloudflare and Kong credentials.
-3. Prepare deployment hardening for the verified ACME and renewal flows.
+1. Review production deployment settings before first real production run.
+2. Keep `LETSENCRYPT_ENV=staging` until the deployment is verified end to end.
+3. Rotate and store operational secrets outside committed files.
 
 ## Blockers
 
@@ -31,15 +31,15 @@ No blockers recorded.
 | epic-02-data-ui | SQLite schema, Bootstrap layout, CRUD screens | in progress |
 | epic-03-kong | Kong target testing and certificate sync | in progress |
 | epic-04-acme | Let's Encrypt and Cloudflare DNS-01 integration | in progress |
-| epic-05-renewal | Manual renew, auto renew, and hardening | not started |
+| epic-05-renewal | Manual renew, auto renew, and hardening | done |
 
 ## Task Index
 
 ### Current Status Snapshot
 
-- `✅ done`: task-001-project-scaffold, task-002-database-schema, task-003-bootstrap-layout, task-004-certificate-crud-ui, task-004.5-migrate-web-adapter-to-fiber, task-005-kong-target-crud-ui, task-006-job-log-ui, task-007-kong-target-test, task-008-kong-certificate-sync, task-009-acme-certificate-issue, task-010-manual-renew, task-011-auto-renew-scheduler
+- `✅ done`: task-001-project-scaffold, task-002-database-schema, task-003-bootstrap-layout, task-004-certificate-crud-ui, task-004.5-migrate-web-adapter-to-fiber, task-005-kong-target-crud-ui, task-006-job-log-ui, task-007-kong-target-test, task-008-kong-certificate-sync, task-009-acme-certificate-issue, task-010-manual-renew, task-011-auto-renew-scheduler, task-012-docker-compose-hardening
 - `🚧 in progress`: none
-- `🎯 next up`: task-012-docker-compose-hardening
+- `🎯 next up`: none
 - `⛔ blocked`: none
 
 ### In Progress
@@ -48,7 +48,7 @@ No blockers recorded.
 
 ### Ready To Start
 
-- `📝` task-012-docker-compose-hardening
+- None
 
 ### Backlog
 
@@ -90,7 +90,7 @@ No blockers recorded.
 | Task | Area | Priority | Status |
 |------|------|----------|--------|
 | task-011-auto-renew-scheduler | backend | high | ✅ done |
-| task-012-docker-compose-hardening | infra/docs | medium | 📝 planned |
+| task-012-docker-compose-hardening | infra/docs | medium | ✅ done |
 
 ## Definition of Done
 
