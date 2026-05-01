@@ -9,6 +9,7 @@ services:
       APP_ACCOUNT_DIR: /data/accounts
       CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:-}
       LETSENCRYPT_ENV: ${LETSENCRYPT_ENV:-staging}
+      AUTO_RENEW_CRON: ${AUTO_RENEW_CRON:-0 3 * * *}
     ports:
       - "8080:8080"
     volumes:

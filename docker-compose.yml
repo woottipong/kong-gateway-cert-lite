@@ -6,7 +6,6 @@ services:
     image: kong-cert-lite:local
     restart: unless-stopped
     environment:
-      APP_ADDR: :8080
       APP_DB_PATH: /data/app.db
       APP_CERT_DIR: /data/certs
       APP_ACCOUNT_DIR: /data/accounts
