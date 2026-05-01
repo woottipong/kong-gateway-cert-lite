@@ -14,7 +14,7 @@
         <form class="card h-100 w-100" method="post" action="{{ .Action }}" novalidate>
           <div class="card-header">
             <div>
-              <h3 class="card-title">Target metadata</h3>
+              <h2 class="card-title">Target metadata</h2>
             </div>
           </div>
           <div class="card-body">
@@ -23,15 +23,17 @@
               <div class="row g-3">
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="name">Target name</label>
-                  <input class="form-control {{ if fieldError .Errors " name" }}is-invalid{{ end }}" id="name"
-                    name="name" value="{{ .Form.Name }}" placeholder="Production Kong">
-                  {{ with fieldError .Errors "name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                  <input class="form-control {{ if fieldError .Errors "name" }}is-invalid{{ end }}" id="name"
+                    name="name" value="{{ .Form.Name }}" placeholder="Production Kong"
+                    {{ if fieldError .Errors "name" }}aria-describedby="error-name" aria-invalid="true"{{ end }}>
+                  {{ with fieldError .Errors "name" }}<div class="invalid-feedback" id="error-name">{{ . }}</div>{{ end }}
                 </div>
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="environment">Environment</label>
-                  <input class="form-control {{ if fieldError .Errors " environment" }}is-invalid{{ end }}"
-                    id="environment" name="environment" value="{{ .Form.Environment }}" placeholder="production">
-                  {{ with fieldError .Errors "environment" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                  <input class="form-control {{ if fieldError .Errors "environment" }}is-invalid{{ end }}"
+                    id="environment" name="environment" value="{{ .Form.Environment }}" placeholder="production"
+                    {{ if fieldError .Errors "environment" }}aria-describedby="error-environment" aria-invalid="true"{{ end }}>
+                  {{ with fieldError .Errors "environment" }}<div class="invalid-feedback" id="error-environment">{{ . }}</div>{{ end }}
                 </div>
               </div>
             </div>
@@ -41,10 +43,11 @@
               <div class="row g-3">
                 <div class="col-12">
                   <label class="form-label" for="admin_url">Admin API URL</label>
-                  <input class="form-control {{ if fieldError .Errors " admin_url" }}is-invalid{{ end }}" id="admin_url"
-                    name="admin_url" value="{{ .Form.AdminURL }}" placeholder="https://kong-admin.internal:8444">
-                  <div class="form-hint">Use the private Admin API endpoint, not the proxy port.</div>
-                  {{ with fieldError .Errors "admin_url" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                  <input class="form-control {{ if fieldError .Errors "admin_url" }}is-invalid{{ end }}" id="admin_url"
+                    name="admin_url" value="{{ .Form.AdminURL }}" placeholder="https://kong-admin.internal:8444"
+                    aria-describedby="{{ if fieldError .Errors "admin_url" }}hint-admin-url error-admin-url{{ else }}hint-admin-url{{ end }}" {{ if fieldError .Errors "admin_url" }}aria-invalid="true"{{ end }}>
+                  <div class="form-hint" id="hint-admin-url">Use the private Admin API endpoint, not the proxy port.</div>
+                  {{ with fieldError .Errors "admin_url" }}<div class="invalid-feedback" id="error-admin-url">{{ . }}</div>{{ end }}
                 </div>
               </div>
             </div>
@@ -54,27 +57,29 @@
               <div class="row g-3">
                 <div class="col-12 col-lg-4">
                   <label class="form-label" for="auth_type">Auth type</label>
-                  <select class="form-select {{ if fieldError .Errors " auth_type" }}is-invalid{{ end }}" id="auth_type"
-                    name="auth_type">
+                  <select class="form-select {{ if fieldError .Errors "auth_type" }}is-invalid{{ end }}" id="auth_type"
+                    name="auth_type" {{ if fieldError .Errors "auth_type" }}aria-describedby="error-auth-type" aria-invalid="true"{{ end }}>
                     <option value="none" {{ if eq .Form.AuthType "none" }}selected{{ end }}>None</option>
                     <option value="custom-header" {{ if eq .Form.AuthType "custom-header" }}selected{{ end }}>Custom
                       header</option>
                   </select>
-                  {{ with fieldError .Errors "auth_type" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                  {{ with fieldError .Errors "auth_type" }}<div class="invalid-feedback" id="error-auth-type">{{ . }}</div>{{ end }}
                 </div>
                 <div class="col-12 col-lg-4">
                   <label class="form-label" for="auth_header_name">Header name</label>
-                  <input class="form-control {{ if fieldError .Errors " auth_header_name" }}is-invalid{{ end }}"
+                  <input class="form-control {{ if fieldError .Errors "auth_header_name" }}is-invalid{{ end }}"
                     id="auth_header_name" name="auth_header_name" value="{{ .Form.AuthHeaderName }}"
-                    placeholder="Kong-Admin-Token">
-                  {{ with fieldError .Errors "auth_header_name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                    placeholder="Kong-Admin-Token"
+                    {{ if fieldError .Errors "auth_header_name" }}aria-describedby="error-auth-header-name" aria-invalid="true"{{ end }}>
+                  {{ with fieldError .Errors "auth_header_name" }}<div class="invalid-feedback" id="error-auth-header-name">{{ . }}</div>{{ end }}
                 </div>
                 <div class="col-12 col-lg-4">
                   <label class="form-label" for="auth_header_value">Header value</label>
-                  <input class="form-control {{ if fieldError .Errors " auth_header_value" }}is-invalid{{ end }}"
+                  <input class="form-control {{ if fieldError .Errors "auth_header_value" }}is-invalid{{ end }}"
                     id="auth_header_value" name="auth_header_value" type="password" value="" autocomplete="new-password"
-                    placeholder="{{ if .Form.HasSecret }}Leave blank to keep existing value{{ else }}Secret token{{ end }}">
-                  {{ with fieldError .Errors "auth_header_value" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                    placeholder="{{ if .Form.HasSecret }}Leave blank to keep existing value{{ else }}Secret token{{ end }}"
+                    {{ if fieldError .Errors "auth_header_value" }}aria-describedby="error-auth-header-value" aria-invalid="true"{{ end }}>
+                  {{ with fieldError .Errors "auth_header_value" }}<div class="invalid-feedback" id="error-auth-header-value">{{ . }}</div>{{ end }}
                 </div>
               </div>
             </div>
@@ -90,10 +95,10 @@
       </div>
 
       <div class="col-lg-4 d-flex">
-        <aside class="card h-100 w-100">
+        <section class="card h-100 w-100">
           <div class="card-header">
             <div>
-              <h3 class="card-title">Target workflow</h3>
+              <h2 class="card-title">Target workflow</h2>
             </div>
           </div>
           <div class="card-body">
@@ -159,7 +164,7 @@
               </div>
             </div>
           </div>
-        </aside>
+        </section>
       </div>
     </div>
   </div>

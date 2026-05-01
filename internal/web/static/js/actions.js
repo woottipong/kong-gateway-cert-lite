@@ -273,12 +273,9 @@
       input.className = "app-tag-text";
       input.placeholder = locked ? "" : "type and press Enter";
       if (locked) input.disabled = true;
-      
-      // Associate with label
-      var label = document.querySelector('label[for="' + name + '-input"]');
-      if (label) {
-        input.setAttribute("aria-labelledby", label.id || "");
-      }
+      if (container.dataset.tagLabel) input.setAttribute("aria-label", container.dataset.tagLabel);
+      if (container.dataset.tagDescribedby) input.setAttribute("aria-describedby", container.dataset.tagDescribedby);
+      if (container.dataset.tagInvalid) input.setAttribute("aria-invalid", container.dataset.tagInvalid);
       
       container.appendChild(input);
 

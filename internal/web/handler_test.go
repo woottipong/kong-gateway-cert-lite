@@ -170,7 +170,7 @@ func TestCreateCertificateAndRenderDetail(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Production wildcard",
-		`<th scope="col">SNI</th>`,
+		`<th scope="col" class="d-none d-md-table-cell">SNIs</th>`,
 		`class="badge bg-secondary-lt text-secondary">*.example.com<`,
 		"action=\"/certificates/1/delete\"",
 		">Delete<",
@@ -785,6 +785,12 @@ func TestCreateCertificateValidationErrors(t *testing.T) {
 		"Add at least one domain.",
 		"Add at least one SNI value.",
 		"Renew before days must be greater than 0.",
+		`<h1 class="page-title">Add certificate</h1>`,
+		`data-tag-for="domains" data-tag-label="Domains" data-tag-invalid="true" data-tag-describedby="error-domains hint-domains"`,
+		`id="domains" name="domains" aria-label="Domains" tabindex="-1"`,
+		`data-tag-for="snis"`,
+		`data-tag-label="SNI values" data-tag-invalid="true" data-tag-describedby="error-snis hint-snis"`,
+		`id="snis" name="snis" aria-label="SNI values" tabindex="-1"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("expected validation body to contain %q", want)
@@ -828,7 +834,7 @@ func TestCreateKongTargetAndRenderList(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Production Kong",
-		`<th scope="col">Environment</th>`,
+		`<th scope="col" class="d-none d-md-table-cell">Environment</th>`,
 		`class="badge bg-secondary-lt text-secondary">production<`,
 		"production",
 		"https://kong-admin.internal:8444",
@@ -878,6 +884,16 @@ func TestCreateKongTargetValidationErrors(t *testing.T) {
 		"Enter a valid Admin API URL.",
 		"Header name is required for custom-header auth.",
 		"Header value is required for custom-header auth.",
+		`id="name"`,
+		`aria-describedby="error-name" aria-invalid="true"`,
+		`id="environment"`,
+		`aria-describedby="error-environment" aria-invalid="true"`,
+		`id="admin_url"`,
+		`aria-describedby="hint-admin-url error-admin-url" aria-invalid="true"`,
+		`id="auth_header_name"`,
+		`aria-describedby="error-auth-header-name" aria-invalid="true"`,
+		`id="auth_header_value"`,
+		`aria-describedby="error-auth-header-value" aria-invalid="true"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("expected validation body to contain %q", want)
@@ -1629,7 +1645,7 @@ func TestJobsListOrdersLatestFirstAndRendersEmptyState(t *testing.T) {
 	}
 	for _, want := range []string{
 		`class="table table-hover card-table table-vcenter align-middle mb-0"`,
-		`class="badge bg-purple-lt text-purple text-uppercase">Test Kong<`,
+		`class="badge bg-purple-lt text-purple text-uppercase me-auto">Test Kong<`,
 		`class="badge bg-warning-lt text-warning me-auto">Running<`,
 	} {
 		if !strings.Contains(body, want) {

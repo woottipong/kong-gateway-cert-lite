@@ -14,7 +14,7 @@
         <form class="card h-100 w-100" method="post" action="{{ .Action }}" novalidate>
           <div class="card-header">
             <div>
-              <h3 class="card-title">Certificate metadata</h3>
+              <h2 class="card-title">Certificate metadata</h2>
             </div>
           </div>
           <div class="card-body">
@@ -44,18 +44,19 @@
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="domains-input">Domains</label>
                   <div class="app-tag-input{{ if fieldError .Errors "domains" }} is-invalid{{ end }}"
-                    data-tag-for="domains" {{ if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
+                    data-tag-for="domains" data-tag-label="Domains" {{ if fieldError .Errors "domains" }}data-tag-invalid="true" data-tag-describedby="error-domains hint-domains"{{ else }}data-tag-describedby="hint-domains"{{ end }} {{ if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
                   {{ with fieldError .Errors "domains" }}<div class="invalid-feedback d-block" id="error-domains">{{ . }}</div>{{ end }}
-                  <textarea class="visually-hidden" id="domains" name="domains" {{ if .DomainsAndSNILock }}disabled{{
+                  <textarea class="visually-hidden" id="domains" name="domains" aria-label="Domains" tabindex="-1" {{ if .DomainsAndSNILock }}disabled{{
                     end }}>{{ .Form.DomainsText }}</textarea>
                   <div class="form-hint" id="hint-domains">{{ .DomainsHelpText }}</div>
                 </div>
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="snis-input">SNI values</label>
                   <div class="app-tag-input{{ if fieldError .Errors "snis" }} is-invalid{{ end }}" data-tag-for="snis"
+                    data-tag-label="SNI values" {{ if fieldError .Errors "snis" }}data-tag-invalid="true" data-tag-describedby="error-snis hint-snis"{{ else }}data-tag-describedby="hint-snis"{{ end }}
                     {{ if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
                   {{ with fieldError .Errors "snis" }}<div class="invalid-feedback d-block" id="error-snis">{{ . }}</div>{{ end }}
-                  <textarea class="visually-hidden" id="snis" name="snis" {{ if .DomainsAndSNILock }}disabled{{ end
+                  <textarea class="visually-hidden" id="snis" name="snis" aria-label="SNI values" tabindex="-1" {{ if .DomainsAndSNILock }}disabled{{ end
                     }}>{{ .Form.SNIsText }}</textarea>
                   <div class="form-hint" id="hint-snis">{{ .SNIsHelpText }}</div>
                 </div>
@@ -101,10 +102,10 @@
       </div>
 
       <div class="col-lg-4 d-flex">
-        <aside class="card h-100 w-100">
+        <section class="card h-100 w-100">
           <div class="card-header">
             <div>
-              <h3 class="card-title">Issue and sync workflow</h3>
+              <h2 class="card-title">Issue and sync workflow</h2>
             </div>
           </div>
           <div class="card-body">
@@ -170,7 +171,7 @@
               </div>
             </div>
           </div>
-        </aside>
+        </section>
       </div>
     </div>
   </div>
