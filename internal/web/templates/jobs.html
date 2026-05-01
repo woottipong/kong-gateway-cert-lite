@@ -14,9 +14,10 @@
         <table class="table table-hover card-table table-vcenter align-middle mb-0">
           <thead>
             <tr>
-              {{ range .Columns }}
-              <th scope="col">{{ . }}</th>
-              {{ end }}
+              <th scope="col">Type</th>
+              <th scope="col">Subject</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-end">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -26,16 +27,16 @@
               <td>
                 <div class="d-grid gap-1">
                   <span
-                    class="badge bg-{{ jobTypeClass .Job.Type }}-lt text-{{ jobTypeClass .Job.Type }} text-uppercase">{{
+                    class="badge bg-{{ jobTypeClass .Job.Type }}-lt text-{{ jobTypeClass .Job.Type }} text-uppercase me-auto">{{
                     .TypeLabel }}</span>
-                  <span class="text-secondary text-nowrap font-monospace small">{{ .StartedAt }}</span>
+                  <span class="text-secondary text-nowrap font-monospace small d-none d-sm-inline">{{ .StartedAt }}</span>
                 </div>
               </td>
               <td>
                 <div class="d-grid gap-1">
-                  {{ if .Job.CertificateID }}<a class="fw-semibold" href="/certificates/{{ .Job.CertificateID }}"
+                  {{ if .Job.CertificateID }}<a class="fw-semibold text-truncate d-inline-block" style="max-width: 12rem;" href="/certificates/{{ .Job.CertificateID }}"
                     onclick="event.stopPropagation()">{{ .CertificateLabel }}</a>{{ end }}
-                  {{ if .Job.KongTargetID }}<span class="small text-secondary">{{ .KongTargetLabel }}</span>{{ end }}
+                  {{ if .Job.KongTargetID }}<span class="small text-secondary d-none d-md-block">{{ .KongTargetLabel }}</span>{{ end }}
                   {{ if and (not .Job.CertificateID) (not .Job.KongTargetID) }}<span class="text-secondary">—</span>{{
                   end }}
                 </div>
@@ -44,9 +45,9 @@
                 <div class="d-grid gap-1">
                   <span class="badge bg-{{ statusClass .Job.Status }}-lt text-{{ statusClass .Job.Status }} me-auto">{{
                     .StatusLabel }}</span>
-                  <span class="small text-secondary">Finished: {{ .FinishedAt }}</span>
+                  <span class="small text-secondary d-none d-sm-block">Finished: {{ .FinishedAt }}</span>
                 </div>
-                {{ if .Job.Message }}<div class="text-secondary text-truncate mt-1">{{ .Job.Message }}</div>{{ end }}
+                {{ if .Job.Message }}<div class="text-secondary text-truncate mt-1 d-none d-lg-block" style="max-width: 15rem;">{{ .Job.Message }}</div>{{ end }}
               </td>
               <td class="text-end" onclick="event.stopPropagation()">
                 <a class="btn btn-outline-secondary btn-sm" href="/jobs/{{ .Job.ID }}">Log</a>

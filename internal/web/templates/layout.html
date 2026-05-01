@@ -105,12 +105,12 @@
       </div>
     </aside>
 
-    <div class="page-wrapper">
+    <main class="page-wrapper">
       {{ with .Flash }}
       <div class="position-fixed top-0 end-0 p-3"
         style="z-index:1080;max-width:min(24rem,calc(100vw - 2rem));width:100%;" aria-live="polite" aria-atomic="true"
         data-flash-region>
-        <div class="alert alert-{{ .Tone }} alert-important alert-dismissible shadow-sm fade show mb-0" role="status"
+        <div class="alert alert-{{ .Tone }} alert-important alert-dismissible shadow-sm fade show mb-0" role="alert"
           data-flash-toast>
           <div class="fw-semibold">
             {{ if eq .Tone "danger" }}Action failed{{ else if eq .Tone "warning" }}Review needed{{ else }}Saved{{ end }}
@@ -121,7 +121,7 @@
       </div>
       {{ end }}
       {{ template "content" . }}
-    </div>
+    </main>
   </div>
   <div class="modal modal-blur" data-confirm-backdrop hidden aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">

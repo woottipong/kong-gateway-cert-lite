@@ -23,15 +23,17 @@
               <div class="row g-3">
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="name">Certificate name</label>
-                  <input class="form-control {{ if fieldError .Errors " name" }}is-invalid{{ end }}" id="name"
-                    name="name" value="{{ .Form.Name }}" placeholder="Production wildcard">
-                  {{ with fieldError .Errors "name" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                  <input class="form-control {{ if fieldError .Errors "name" }}is-invalid{{ end }}" id="name"
+                    name="name" value="{{ .Form.Name }}" placeholder="Production wildcard"
+                    {{ if fieldError .Errors "name" }}aria-describedby="error-name" aria-invalid="true"{{ end }}>
+                  {{ with fieldError .Errors "name" }}<div class="invalid-feedback" id="error-name">{{ . }}</div>{{ end }}
                 </div>
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="email">ACME account email</label>
-                  <input class="form-control {{ if fieldError .Errors " email" }}is-invalid{{ end }}" id="email"
-                    name="email" value="{{ .Form.Email }}" placeholder="admin@example.com">
-                  {{ with fieldError .Errors "email" }}<div class="invalid-feedback">{{ . }}</div>{{ end }}
+                  <input class="form-control {{ if fieldError .Errors "email" }}is-invalid{{ end }}" id="email"
+                    name="email" value="{{ .Form.Email }}" placeholder="admin@example.com"
+                    {{ if fieldError .Errors "email" }}aria-describedby="error-email" aria-invalid="true"{{ end }}>
+                  {{ with fieldError .Errors "email" }}<div class="invalid-feedback" id="error-email">{{ . }}</div>{{ end }}
                 </div>
               </div>
             </div>
@@ -40,22 +42,22 @@
               <div class="subheader mb-2">Coverage</div>
               <div class="row g-3">
                 <div class="col-12 col-lg-6">
-                  <label class="form-label">Domains</label>
-                  <div class="app-tag-input{{ if fieldError .Errors " domains" }} is-invalid{{ end }}"
+                  <label class="form-label" for="domains-input">Domains</label>
+                  <div class="app-tag-input{{ if fieldError .Errors "domains" }} is-invalid{{ end }}"
                     data-tag-for="domains" {{ if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
-                  {{ with fieldError .Errors "domains" }}<div class="invalid-feedback d-block">{{ . }}</div>{{ end }}
+                  {{ with fieldError .Errors "domains" }}<div class="invalid-feedback d-block" id="error-domains">{{ . }}</div>{{ end }}
                   <textarea class="visually-hidden" id="domains" name="domains" {{ if .DomainsAndSNILock }}disabled{{
                     end }}>{{ .Form.DomainsText }}</textarea>
-                  <div class="form-hint">{{ .DomainsHelpText }}</div>
+                  <div class="form-hint" id="hint-domains">{{ .DomainsHelpText }}</div>
                 </div>
                 <div class="col-12 col-lg-6">
-                  <label class="form-label">SNI values</label>
-                  <div class="app-tag-input{{ if fieldError .Errors " snis" }} is-invalid{{ end }}" data-tag-for="snis"
+                  <label class="form-label" for="snis-input">SNI values</label>
+                  <div class="app-tag-input{{ if fieldError .Errors "snis" }} is-invalid{{ end }}" data-tag-for="snis"
                     {{ if .DomainsAndSNILock }} data-tag-locked{{ end }}></div>
-                  {{ with fieldError .Errors "snis" }}<div class="invalid-feedback d-block">{{ . }}</div>{{ end }}
+                  {{ with fieldError .Errors "snis" }}<div class="invalid-feedback d-block" id="error-snis">{{ . }}</div>{{ end }}
                   <textarea class="visually-hidden" id="snis" name="snis" {{ if .DomainsAndSNILock }}disabled{{ end
                     }}>{{ .Form.SNIsText }}</textarea>
-                  <div class="form-hint">{{ .SNIsHelpText }}</div>
+                  <div class="form-hint" id="hint-snis">{{ .SNIsHelpText }}</div>
                 </div>
               </div>
             </div>
@@ -66,12 +68,13 @@
                 <div class="col-12 col-lg-6">
                   <label class="form-label" for="renew_before_days">Renew before expiry</label>
                   <div class="input-group">
-                    <input class="form-control {{ if fieldError .Errors " renew_before_days" }}is-invalid{{ end }}"
+                    <input class="form-control {{ if fieldError .Errors "renew_before_days" }}is-invalid{{ end }}"
                       id="renew_before_days" name="renew_before_days" type="number" min="1"
-                      value="{{ .Form.RenewBeforeDays }}">
+                      value="{{ .Form.RenewBeforeDays }}"
+                      {{ if fieldError .Errors "renew_before_days" }}aria-describedby="error-renew-before-days" aria-invalid="true"{{ end }}>
                     <span class="input-group-text">days</span>
                   </div>
-                  {{ with fieldError .Errors "renew_before_days" }}<div class="invalid-feedback d-block">{{ . }}</div>{{
+                  {{ with fieldError .Errors "renew_before_days" }}<div class="invalid-feedback d-block" id="error-renew-before-days">{{ . }}</div>{{
                   end }}
                 </div>
                 <div class="col-12 col-lg-6">

@@ -269,9 +269,17 @@
 
       var input = document.createElement("input");
       input.type = "text";
+      input.id = name + "-input";
       input.className = "app-tag-text";
       input.placeholder = locked ? "" : "type and press Enter";
       if (locked) input.disabled = true;
+      
+      // Associate with label
+      var label = document.querySelector('label[for="' + name + '-input"]');
+      if (label) {
+        input.setAttribute("aria-labelledby", label.id || "");
+      }
+      
       container.appendChild(input);
 
       function sync() {

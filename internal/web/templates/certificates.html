@@ -14,9 +14,11 @@
         <table class="table table-hover card-table table-vcenter align-middle mb-0">
           <thead>
             <tr>
-              {{ range .Columns }}
-              <th scope="col">{{ . }}</th>
-              {{ end }}
+              <th scope="col">Certificate</th>
+              <th scope="col" class="d-none d-md-table-cell">SNIs</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="d-none d-lg-table-cell">Kong Targets</th>
+              <th scope="col" class="text-end">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -25,9 +27,9 @@
             <tr data-row-href="/certificates/{{ .Certificate.ID }}">
               <td>
                 <div class="fw-semibold">{{ .Certificate.PrimaryDomain }}</div>
-                <div class="text-secondary">{{ .Certificate.Name }} · {{ .Type }}</div>
+                <div class="text-secondary small d-none d-sm-block">{{ .Certificate.Name }} · {{ .Type }}</div>
               </td>
-              <td>
+              <td class="d-none d-md-table-cell">
                 {{ if .Certificate.SNIs }}
                 <div class="d-flex flex-wrap gap-1">
                   {{ range .Certificate.SNIs }}
@@ -43,11 +45,10 @@
                   <span
                     class="badge bg-{{ statusClass .Certificate.Status }}-lt text-{{ statusClass .Certificate.Status }} me-auto">{{
                     .StatusLabel }}</span>
-                  <span class="text-secondary small">{{ if .Expires }}Expires {{ .Expires }}{{ if .Remaining }} · {{
-                    .Remaining }}{{ end }}{{ else }}—{{ end }}</span>
+                  <span class="text-secondary small">{{ if .Expires }}<span class="d-none d-sm-inline">Expires </span>{{ .Expires }}{{ else }}—{{ end }}</span>
                 </div>
               </td>
-              <td>
+              <td class="d-none d-lg-table-cell">
                 {{ if gt .LinkedTargetCount 0 }}
                 <span class="badge bg-success-lt text-success">{{ .LinkedTargetCount }} linked</span>
                 {{ else }}
