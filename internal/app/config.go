@@ -16,28 +16,32 @@ const defaultLetsEncryptEnv = "staging"
 const defaultAutoRenewCron = "0 3 * * *"
 
 type Config struct {
-	Addr            string
-	DBPath          string
-	CertDir         string
-	AccountDir      string
-	Username        string
-	Password        string
-	CloudflareToken string
-	LetsEncryptEnv  string
-	AutoRenewCron   string
+	Addr                 string
+	DBPath               string
+	CertDir              string
+	AccountDir           string
+	Username             string
+	Password             string
+	DiscordWebhookURL    string
+	DiscordNotifySuccess bool
+	CloudflareToken      string
+	LetsEncryptEnv       string
+	AutoRenewCron        string
 }
 
 func LoadConfig() (Config, error) {
 	cfg := Config{
-		Addr:            envOrDefault("APP_ADDR", defaultAddr),
-		DBPath:          envOrDefault("APP_DB_PATH", defaultDBPath),
-		CertDir:         envOrDefault("APP_CERT_DIR", defaultCertDir),
-		AccountDir:      envOrDefault("APP_ACCOUNT_DIR", defaultAccountDir),
-		Username:        strings.TrimSpace(os.Getenv("APP_USERNAME")),
-		Password:        os.Getenv("APP_PASSWORD"),
-		CloudflareToken: strings.TrimSpace(os.Getenv("CF_DNS_API_TOKEN")),
-		LetsEncryptEnv:  strings.ToLower(strings.TrimSpace(envOrDefault("LETSENCRYPT_ENV", defaultLetsEncryptEnv))),
-		AutoRenewCron:   strings.TrimSpace(envOrDefault("AUTO_RENEW_CRON", defaultAutoRenewCron)),
+		Addr:                 envOrDefault("APP_ADDR", defaultAddr),
+		DBPath:               envOrDefault("APP_DB_PATH", defaultDBPath),
+		CertDir:              envOrDefault("APP_CERT_DIR", defaultCertDir),
+		AccountDir:           envOrDefault("APP_ACCOUNT_DIR", defaultAccountDir),
+		Username:             strings.TrimSpace(os.Getenv("APP_USERNAME")),
+		Password:             os.Getenv("APP_PASSWORD"),
+		DiscordWebhookURL:    strings.TrimSpace(os.Getenv("DISCORD_WEBHOOK_URL")),
+		DiscordNotifySuccess: parseBoolEnv("DISCORD_NOTIFY_SUCCESS"),
+		CloudflareToken:      strings.TrimSpace(os.Getenv("CF_DNS_API_TOKEN")),
+		LetsEncryptEnv:       strings.ToLower(strings.TrimSpace(envOrDefault("LETSENCRYPT_ENV", defaultLetsEncryptEnv))),
+		AutoRenewCron:        strings.TrimSpace(envOrDefault("AUTO_RENEW_CRON", defaultAutoRenewCron)),
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -45,6 +49,15 @@ func LoadConfig() (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func parseBoolEnv(key string) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }
 
 func (c Config) Validate() error {

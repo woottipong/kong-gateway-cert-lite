@@ -44,11 +44,13 @@ type ACMEIssueClient interface {
 }
 
 type ACMEUseCase struct {
-	certificates IssueCertificateRepository
-	jobs         *JobUseCase
-	client       ACMEIssueClient
-	certDir      string
-	kongSync     *KongSyncUseCase
+	certificates  IssueCertificateRepository
+	jobs          *JobUseCase
+	client        ACMEIssueClient
+	certDir       string
+	kongSync      *KongSyncUseCase
+	notifier      Notifier
+	notifySuccess bool
 }
 
 func NewACMEUseCase(certificates IssueCertificateRepository, jobs *JobUseCase, client ACMEIssueClient, certDir string, kongSync ...*KongSyncUseCase) *ACMEUseCase {
@@ -62,6 +64,11 @@ func NewACMEUseCase(certificates IssueCertificateRepository, jobs *JobUseCase, c
 		uc.kongSync = kongSync[0]
 	}
 	return uc
+}
+
+func (uc *ACMEUseCase) SetNotifier(notifier Notifier, notifySuccess bool) {
+	uc.notifier = notifier
+	uc.notifySuccess = notifySuccess
 }
 
 func (uc *ACMEUseCase) IssueCertificate(ctx context.Context, certificateID int64) error {
@@ -92,17 +99,17 @@ func (uc *ACMEUseCase) IssueCertificate(ctx context.Context, certificateID int64
 		Domains: certificate.Domains,
 	})
 	if issueErr != nil {
-		return uc.failIssue(ctx, certificate.ID, jobID, issueErr)
+		return uc.failIssue(ctx, certificate, jobID, issueErr)
 	}
 
 	certPath, keyPath, err := uc.writeIssuedFiles(certificate.ID, result.FullChainPEM, result.PrivateKeyPEM)
 	if err != nil {
-		return uc.failIssue(ctx, certificate.ID, jobID, err)
+		return uc.failIssue(ctx, certificate, jobID, err)
 	}
 
 	expiresAt, err := parseCertificateExpiry(result.FullChainPEM)
 	if err != nil {
-		return uc.failIssue(ctx, certificate.ID, jobID, err)
+		return uc.failIssue(ctx, certificate, jobID, err)
 	}
 
 	if err := uc.certificates.MarkIssued(ctx, certificate.ID, certPath, keyPath, expiresAt); err != nil {
@@ -124,6 +131,15 @@ func (uc *ACMEUseCase) IssueCertificate(ctx context.Context, certificateID int64
 	}); err != nil {
 		return err
 	}
+	notifyJobResult(ctx, uc.notifier, uc.notifySuccess, NotificationEvent{
+		Severity:    NotificationSeveritySuccess,
+		Event:       "issue_succeeded",
+		Certificate: &certificate,
+		JobID:       jobID,
+		JobType:     domain.JobTypeIssue,
+		JobStatus:   domain.JobStatusSuccess,
+		Message:     "Certificate issued successfully",
+	})
 
 	return nil
 }
@@ -153,7 +169,7 @@ func (uc *ACMEUseCase) RenewCertificate(ctx context.Context, certificateID int64
 
 	existingFullChainPEM, existingPrivateKeyPEM, err := readExistingCertificateFiles(certificate.CertPath, certificate.KeyPath)
 	if err != nil {
-		return uc.failRenew(ctx, certificate.ID, jobID, err)
+		return uc.failRenew(ctx, certificate, jobID, err)
 	}
 
 	result, renewErr := uc.client.Renew(ctx, ACMERenewRequest{
@@ -163,17 +179,17 @@ func (uc *ACMEUseCase) RenewCertificate(ctx context.Context, certificateID int64
 		ExistingPrivateKeyPEM: existingPrivateKeyPEM,
 	})
 	if renewErr != nil {
-		return uc.failRenew(ctx, certificate.ID, jobID, renewErr)
+		return uc.failRenew(ctx, certificate, jobID, renewErr)
 	}
 
 	certPath, keyPath, err := uc.writeIssuedFiles(certificate.ID, result.FullChainPEM, result.PrivateKeyPEM)
 	if err != nil {
-		return uc.failRenew(ctx, certificate.ID, jobID, err)
+		return uc.failRenew(ctx, certificate, jobID, err)
 	}
 
 	expiresAt, err := parseCertificateExpiry(result.FullChainPEM)
 	if err != nil {
-		return uc.failRenew(ctx, certificate.ID, jobID, err)
+		return uc.failRenew(ctx, certificate, jobID, err)
 	}
 
 	if err := uc.certificates.MarkIssued(ctx, certificate.ID, certPath, keyPath, expiresAt); err != nil {
@@ -195,6 +211,15 @@ func (uc *ACMEUseCase) RenewCertificate(ctx context.Context, certificateID int64
 	}); err != nil {
 		return err
 	}
+	notifyJobResult(ctx, uc.notifier, uc.notifySuccess, NotificationEvent{
+		Severity:    NotificationSeveritySuccess,
+		Event:       "renew_succeeded",
+		Certificate: &certificate,
+		JobID:       jobID,
+		JobType:     domain.JobTypeRenew,
+		JobStatus:   domain.JobStatusSuccess,
+		Message:     "Certificate renewed successfully",
+	})
 
 	if uc.kongSync != nil {
 		return uc.kongSync.SyncCertificate(ctx, certificate.ID)
@@ -203,10 +228,10 @@ func (uc *ACMEUseCase) RenewCertificate(ctx context.Context, certificateID int64
 	return nil
 }
 
-func (uc *ACMEUseCase) failIssue(ctx context.Context, certificateID int64, jobID int64, cause error) error {
+func (uc *ACMEUseCase) failIssue(ctx context.Context, certificate domain.Certificate, jobID int64, cause error) error {
 	// Always attempt both operations so the job is never left in a running state.
 	// Combine any persistence errors with errors.Join rather than returning early.
-	statusErr := uc.certificates.UpdateStatus(ctx, certificateID, domain.CertificateStatusFailed)
+	statusErr := uc.certificates.UpdateStatus(ctx, certificate.ID, domain.CertificateStatusFailed)
 
 	logOutput := strings.Join([]string{
 		"Certificate issue failed",
@@ -219,12 +244,21 @@ func (uc *ACMEUseCase) failIssue(ctx context.Context, certificateID int64, jobID
 		Message: cause.Error(),
 		Log:     logOutput,
 	})
+	notifyJobResult(ctx, uc.notifier, uc.notifySuccess, NotificationEvent{
+		Severity:    NotificationSeverityCritical,
+		Event:       "issue_failed",
+		Certificate: &certificate,
+		JobID:       jobID,
+		JobType:     domain.JobTypeIssue,
+		JobStatus:   domain.JobStatusFailed,
+		Message:     cause.Error(),
+	})
 
 	return errors.Join(statusErr, jobErr)
 }
 
-func (uc *ACMEUseCase) failRenew(ctx context.Context, certificateID int64, jobID int64, cause error) error {
-	statusErr := uc.certificates.UpdateStatus(ctx, certificateID, domain.CertificateStatusFailed)
+func (uc *ACMEUseCase) failRenew(ctx context.Context, certificate domain.Certificate, jobID int64, cause error) error {
+	statusErr := uc.certificates.UpdateStatus(ctx, certificate.ID, domain.CertificateStatusFailed)
 
 	logOutput := strings.Join([]string{
 		"Certificate renew failed",
@@ -236,6 +270,15 @@ func (uc *ACMEUseCase) failRenew(ctx context.Context, certificateID int64, jobID
 		Status:  string(domain.JobStatusFailed),
 		Message: cause.Error(),
 		Log:     logOutput,
+	})
+	notifyJobResult(ctx, uc.notifier, uc.notifySuccess, NotificationEvent{
+		Severity:    NotificationSeverityCritical,
+		Event:       "renew_failed",
+		Certificate: &certificate,
+		JobID:       jobID,
+		JobType:     domain.JobTypeRenew,
+		JobStatus:   domain.JobStatusFailed,
+		Message:     cause.Error(),
 	})
 
 	return errors.Join(statusErr, jobErr)

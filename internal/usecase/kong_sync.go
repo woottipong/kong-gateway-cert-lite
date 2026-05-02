@@ -26,10 +26,12 @@ type KongCertificateSyncClient interface {
 }
 
 type KongSyncUseCase struct {
-	certificates SyncCertificateRepository
-	targets      SyncKongTargetRepository
-	jobs         *JobUseCase
-	client       KongCertificateSyncClient
+	certificates  SyncCertificateRepository
+	targets       SyncKongTargetRepository
+	jobs          *JobUseCase
+	client        KongCertificateSyncClient
+	notifier      Notifier
+	notifySuccess bool
 }
 
 func NewKongSyncUseCase(certificates SyncCertificateRepository, targets SyncKongTargetRepository, jobs *JobUseCase, client KongCertificateSyncClient) *KongSyncUseCase {
@@ -39,6 +41,11 @@ func NewKongSyncUseCase(certificates SyncCertificateRepository, targets SyncKong
 		jobs:         jobs,
 		client:       client,
 	}
+}
+
+func (uc *KongSyncUseCase) SetNotifier(notifier Notifier, notifySuccess bool) {
+	uc.notifier = notifier
+	uc.notifySuccess = notifySuccess
 }
 
 func (uc *KongSyncUseCase) SyncCertificate(ctx context.Context, certificateID int64) error {
@@ -134,6 +141,24 @@ func (uc *KongSyncUseCase) syncTarget(ctx context.Context, certificate domain.Ce
 	}); err != nil {
 		return err
 	}
+	jobStatus := domain.JobStatus(status)
+	severity := NotificationSeveritySuccess
+	event := "sync_succeeded"
+	if jobStatus == domain.JobStatusFailed {
+		severity = NotificationSeverityCritical
+		event = "sync_failed"
+	}
+	notifyJobResult(ctx, uc.notifier, uc.notifySuccess, NotificationEvent{
+		Severity:    severity,
+		Event:       event,
+		Certificate: &certificate,
+		KongTarget:  target.Name,
+		Environment: target.Environment,
+		JobID:       jobID,
+		JobType:     domain.JobTypeSync,
+		JobStatus:   jobStatus,
+		Message:     message,
+	})
 
 	return nil
 }

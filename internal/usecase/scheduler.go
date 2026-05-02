@@ -24,6 +24,8 @@ type RenewalScheduler struct {
 	certificates RenewalCertificateRepository
 	renewer      CertificateRenewer
 	schedule     CronSchedule
+	notifier     Notifier
+	notified     map[string]struct{}
 
 	stopCh  chan struct{}
 	doneCh  chan struct{}
@@ -47,7 +49,12 @@ func NewRenewalScheduler(certificates RenewalCertificateRepository, renewer Cert
 		schedule:     schedule,
 		stopCh:       make(chan struct{}),
 		doneCh:       make(chan struct{}),
+		notified:     make(map[string]struct{}),
 	}, nil
+}
+
+func (s *RenewalScheduler) SetNotifier(notifier Notifier) {
+	s.notifier = notifier
 }
 
 func (s *RenewalScheduler) Start(ctx context.Context) {
@@ -97,7 +104,38 @@ func (s *RenewalScheduler) RunOnce(ctx context.Context, now time.Time) error {
 		}
 	}
 
+	if s.notifier != nil {
+		refreshedCertificates, err := s.certificates.List(ctx)
+		if err != nil {
+			renewErrors = append(renewErrors, err)
+		} else {
+			for _, certificate := range refreshedCertificates {
+				if event, ok := certificateExpiryNotification(certificate, now); ok {
+					if s.expiryNotificationSent(event, now) {
+						continue
+					}
+					_ = s.notifier.Notify(ctx, event)
+				}
+			}
+		}
+	}
+
 	return errors.Join(renewErrors...)
+}
+
+func (s *RenewalScheduler) expiryNotificationSent(event NotificationEvent, now time.Time) bool {
+	if event.Certificate == nil {
+		return false
+	}
+	key := fmt.Sprintf("%d:%s:%s", event.Certificate.ID, event.Event, now.UTC().Format("2006-01-02"))
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.notified[key]; ok {
+		return true
+	}
+	s.notified[key] = struct{}{}
+	return false
 }
 
 func (s *RenewalScheduler) loop(ctx context.Context) {

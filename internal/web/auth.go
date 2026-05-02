@@ -6,9 +6,9 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/json"
 	"html/template"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +34,11 @@ type LoginPage struct {
 	HasAuth    bool
 	Username   string
 	CurrentUTC string
+}
+
+type sessionPayload struct {
+	Username  string `json:"username"`
+	ExpiresAt int64  `json:"expires_at"`
 }
 
 func (c BasicAuthConfig) Enabled() bool {
@@ -83,7 +88,6 @@ func LoginPageHandler(cfg BasicAuthConfig) fiber.Handler {
 			Title:      "Login",
 			ReturnTo:   safeReturnTo(c.Query("return_to")),
 			HasAuth:    cfg.Enabled(),
-			Username:   cfg.normalizedUsername(),
 			CurrentUTC: time.Now().UTC().Format("15:04 UTC"),
 		})
 	}
@@ -156,13 +160,18 @@ func setSessionCookie(c *fiber.Ctx, cfg BasicAuthConfig, now time.Time) {
 }
 
 func createSessionToken(cfg BasicAuthConfig, expires time.Time) string {
-	username := cfg.normalizedUsername()
-	expiry := strconv.FormatInt(expires.Unix(), 10)
-	payload := username + "|" + expiry
+	payloadBytes, err := json.Marshal(sessionPayload{
+		Username:  cfg.normalizedUsername(),
+		ExpiresAt: expires.Unix(),
+	})
+	if err != nil {
+		return ""
+	}
+	payload := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	mac := hmac.New(sha256.New, cfg.signingKey())
 	_, _ = mac.Write([]byte(payload))
 	signature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-	return base64.RawURLEncoding.EncodeToString([]byte(payload + "|" + signature))
+	return payload + "." + signature
 }
 
 func validSessionCookie(cfg BasicAuthConfig, token string, now time.Time) bool {
@@ -170,30 +179,30 @@ func validSessionCookie(cfg BasicAuthConfig, token string, now time.Time) bool {
 		return false
 	}
 
-	decoded, err := base64.RawURLEncoding.DecodeString(token)
-	if err != nil {
-		return false
-	}
-	parts := strings.Split(string(decoded), "|")
-	if len(parts) != 3 {
+	payload, signature, ok := strings.Cut(token, ".")
+	if !ok || payload == "" || signature == "" {
 		return false
 	}
 
-	expiresUnix, err := strconv.ParseInt(parts[1], 10, 64)
-	if err != nil {
-		return false
-	}
-	if !now.Before(time.Unix(expiresUnix, 0)) {
-		return false
-	}
-
-	payload := parts[0] + "|" + parts[1]
 	mac := hmac.New(sha256.New, cfg.signingKey())
 	_, _ = mac.Write([]byte(payload))
 	expectedSignature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-	signatureMatches := subtle.ConstantTimeCompare([]byte(parts[2]), []byte(expectedSignature)) == 1
-	usernameMatches := subtle.ConstantTimeCompare([]byte(parts[0]), []byte(cfg.normalizedUsername())) == 1
-	return signatureMatches && usernameMatches
+	if subtle.ConstantTimeCompare([]byte(signature), []byte(expectedSignature)) != 1 {
+		return false
+	}
+
+	decoded, err := base64.RawURLEncoding.DecodeString(payload)
+	if err != nil {
+		return false
+	}
+	var session sessionPayload
+	if err := json.Unmarshal(decoded, &session); err != nil {
+		return false
+	}
+	if !now.Before(time.Unix(session.ExpiresAt, 0)) {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(session.Username), []byte(cfg.normalizedUsername())) == 1
 }
 
 func renderLogin(c *fiber.Ctx, data LoginPage) error {

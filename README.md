@@ -91,12 +91,25 @@ APP_CERT_DIR       Default: /data/certs
 APP_ACCOUNT_DIR    Default: /data/accounts
 APP_USERNAME       Enables operator login when set with APP_PASSWORD
 APP_PASSWORD       Enables operator login when set with APP_USERNAME
+DISCORD_WEBHOOK_URL Optional Discord webhook URL for failure and expiry notifications
+DISCORD_NOTIFY_SUCCESS Default: false
 CF_DNS_API_TOKEN   Required for ACME issue and renew
 LETSENCRYPT_ENV    Default: staging
 AUTO_RENEW_CRON    Default: 0 3 * * *
 ```
 
 `APP_USERNAME` and `APP_PASSWORD` must be set together. When both are set, all UI and action routes require the built-in login page. Successful login creates an HttpOnly session cookie that expires after 12 hours. `/healthz` remains unauthenticated for container health checks.
+
+`DISCORD_WEBHOOK_URL` is optional. When set, issue, renew, sync, Kong target test failures, and certificate expiry threshold alerts are sent to Discord. `DISCORD_NOTIFY_SUCCESS=true` also sends success notifications for issue, renew, sync, and Kong target test jobs.
+
+Certificate expiry notifications run with `AUTO_RENEW_CRON` after renewal attempts. They use a two-day window without storing notification state:
+
+```text
+14 or 13 days remaining  -> warning
+7 or 6 days remaining    -> critical
+3 or 2 days remaining    -> critical
+0 or -1 days remaining   -> expired / critical
+```
 
 `LETSENCRYPT_ENV` must be `staging` or `production`. Keep `staging` until a deployment has been tested end to end.
 

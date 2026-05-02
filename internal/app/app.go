@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	acmeadapter "kong-cert-lite/internal/adapter/acme"
+	discordadapter "kong-cert-lite/internal/adapter/discord"
 	kongadapter "kong-cert-lite/internal/adapter/kong"
 	sqliteadapter "kong-cert-lite/internal/adapter/sqlite"
 	"kong-cert-lite/internal/db"
@@ -42,15 +43,24 @@ func New(cfg Config, logger *slog.Logger) (*App, error) {
 	kongTargetRepository := sqliteadapter.NewKongTargetRepository(database)
 	jobRepository := sqliteadapter.NewJobRepository(database)
 	jobUseCase := usecase.NewJobUseCase(jobRepository)
+	notifier := loggingNotifier{
+		logger: logger,
+		next:   discordadapter.NewNotifier(cfg.DiscordWebhookURL, nil),
+	}
 	kongAdminClient := kongadapter.NewAdminClient(nil)
 	kongSyncUseCase := usecase.NewKongSyncUseCase(certificateRepository, kongTargetRepository, jobUseCase, kongAdminClient)
+	kongSyncUseCase.SetNotifier(notifier, cfg.DiscordNotifySuccess)
+	kongTargetUseCase := usecase.NewKongTargetUseCase(kongTargetRepository, kongAdminClient, jobUseCase)
+	kongTargetUseCase.SetNotifier(notifier, cfg.DiscordNotifySuccess)
 	acmeClient := acmeadapter.NewLegoClient(cfg.AccountDir, cfg.LetsEncryptEnv, cfg.CloudflareToken)
 	acmeUseCase := usecase.NewACMEUseCase(certificateRepository, jobUseCase, acmeClient, cfg.CertDir, kongSyncUseCase)
+	acmeUseCase.SetNotifier(notifier, cfg.DiscordNotifySuccess)
 	renewalScheduler, err := usecase.NewRenewalScheduler(certificateRepository, acmeUseCase, cfg.AutoRenewCron)
 	if err != nil {
 		_ = database.Close()
 		return nil, err
 	}
+	renewalScheduler.SetNotifier(notifier)
 	schedulerCtx, schedulerCancel := context.WithCancel(context.Background())
 	renewalScheduler.Start(schedulerCtx)
 
@@ -60,7 +70,7 @@ func New(cfg Config, logger *slog.Logger) (*App, error) {
 		certificates:    usecase.NewCertificateUseCase(certificateRepository),
 		acme:            acmeUseCase,
 		kongSync:        kongSyncUseCase,
-		kongTargets:     usecase.NewKongTargetUseCase(kongTargetRepository, kongAdminClient, jobUseCase),
+		kongTargets:     kongTargetUseCase,
 		jobs:            jobUseCase,
 		scheduler:       renewalScheduler,
 		schedulerCancel: schedulerCancel,

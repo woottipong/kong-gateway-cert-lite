@@ -144,6 +144,9 @@ func TestLoginPageRenders(t *testing.T) {
 			t.Fatalf("expected login body to contain %q", want)
 		}
 	}
+	if strings.Contains(body, `value="operator"`) {
+		t.Fatal("expected login page not to disclose configured username")
+	}
 }
 
 func TestLoginRejectsInvalidCredentials(t *testing.T) {
@@ -199,6 +202,31 @@ func TestLoginCreatesSession(t *testing.T) {
 	}
 	if !strings.Contains(body, "Certificates") {
 		t.Fatal("expected authenticated certificates page")
+	}
+}
+
+func TestLoginSessionSupportsUsernameWithDelimiter(t *testing.T) {
+	_, app := testServerWithAuth(t, BasicAuthConfig{Username: "ops|admin", Password: "secret"})
+	form := url.Values{
+		"username":  {"ops|admin"},
+		"password":  {"secret"},
+		"return_to": {"/certificates"},
+	}
+	loginReq := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
+	loginReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	loginResp, _ := doRequest(t, app, loginReq)
+
+	if loginResp.StatusCode != fiber.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", loginResp.StatusCode)
+	}
+	certReq := httptest.NewRequest(http.MethodGet, "/certificates", nil)
+	for _, cookie := range loginResp.Cookies() {
+		certReq.AddCookie(cookie)
+	}
+	certResp, _ := doRequest(t, app, certReq)
+	if certResp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected session to work with delimiter username, got %d", certResp.StatusCode)
 	}
 }
 

@@ -90,6 +90,28 @@ func TestLoadConfigReadsAddrFromEnv(t *testing.T) {
 	if cfg.Password != "secret" {
 		t.Fatal("expected APP_PASSWORD override")
 	}
+	if cfg.DiscordWebhookURL != "" {
+		t.Fatalf("expected default discord webhook to be empty, got %q", cfg.DiscordWebhookURL)
+	}
+	if cfg.DiscordNotifySuccess {
+		t.Fatal("expected default discord success notification to be false")
+	}
+}
+
+func TestLoadConfigReadsDiscordNotificationEnv(t *testing.T) {
+	t.Setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/example")
+	t.Setenv("DISCORD_NOTIFY_SUCCESS", "true")
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("expected config to load: %v", err)
+	}
+	if cfg.DiscordWebhookURL != "https://discord.com/api/webhooks/example" {
+		t.Fatalf("expected discord webhook override, got %q", cfg.DiscordWebhookURL)
+	}
+	if !cfg.DiscordNotifySuccess {
+		t.Fatal("expected discord success notifications enabled")
+	}
 }
 
 func TestConfigValidateRejectsEmptyAddr(t *testing.T) {

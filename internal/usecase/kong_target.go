@@ -25,9 +25,11 @@ type KongAdminClient interface {
 }
 
 type KongTargetUseCase struct {
-	repository KongTargetRepository
-	tester     KongAdminClient
-	jobs       *JobUseCase
+	repository    KongTargetRepository
+	tester        KongAdminClient
+	jobs          *JobUseCase
+	notifier      Notifier
+	notifySuccess bool
 }
 
 type KongTargetInput struct {
@@ -60,6 +62,11 @@ type KongTargetView struct {
 
 func NewKongTargetUseCase(repository KongTargetRepository, tester KongAdminClient, jobs *JobUseCase) *KongTargetUseCase {
 	return &KongTargetUseCase{repository: repository, tester: tester, jobs: jobs}
+}
+
+func (uc *KongTargetUseCase) SetNotifier(notifier Notifier, notifySuccess bool) {
+	uc.notifier = notifier
+	uc.notifySuccess = notifySuccess
 }
 
 func (uc *KongTargetUseCase) List(ctx context.Context) ([]KongTargetView, error) {
@@ -182,6 +189,23 @@ func (uc *KongTargetUseCase) TestConnection(ctx context.Context, id int64) error
 	}); err != nil {
 		return err
 	}
+	status := domain.JobStatus(jobStatus)
+	severity := NotificationSeveritySuccess
+	event := "kong_target_test_succeeded"
+	if status == domain.JobStatusFailed {
+		severity = NotificationSeverityWarning
+		event = "kong_target_test_failed"
+	}
+	notifyJobResult(ctx, uc.notifier, uc.notifySuccess, NotificationEvent{
+		Severity:    severity,
+		Event:       event,
+		KongTarget:  target.Name,
+		Environment: target.Environment,
+		JobID:       jobID,
+		JobType:     domain.JobTypeTestKong,
+		JobStatus:   status,
+		Message:     jobMessage,
+	})
 
 	return nil
 }
