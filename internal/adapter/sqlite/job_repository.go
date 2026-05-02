@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"kong-cert-lite/internal/domain"
@@ -118,6 +119,65 @@ func (r *JobRepository) Update(ctx context.Context, job domain.Job) error {
 	return nil
 }
 
+func (r *JobRepository) HasRunningCertificateJob(ctx context.Context, certificateID int64, types []domain.JobType) (bool, error) {
+	if certificateID <= 0 || len(types) == 0 {
+		return false, nil
+	}
+
+	typePlaceholders, typeArgs := jobTypeFilterArgs(types)
+	args := append([]any{certificateID, string(domain.JobStatusRunning)}, typeArgs...)
+	row := r.db.QueryRowContext(ctx, `
+		SELECT 1
+		FROM jobs
+		WHERE certificate_id = ?
+		  AND status = ?
+		  AND type IN (`+typePlaceholders+`)
+		LIMIT 1
+	`, args...)
+
+	var exists int
+	if err := row.Scan(&exists); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("check running certificate job: %w", err)
+	}
+	return true, nil
+}
+
+func (r *JobRepository) LatestFailedCertificateJobSince(ctx context.Context, certificateID int64, types []domain.JobType, since time.Time) (*domain.Job, error) {
+	if certificateID <= 0 || len(types) == 0 {
+		return nil, nil
+	}
+
+	typePlaceholders, typeArgs := jobTypeFilterArgs(types)
+	args := append([]any{
+		certificateID,
+		string(domain.JobStatusFailed),
+		since.UTC().Format("2006-01-02 15:04:05"),
+	}, typeArgs...)
+	row := r.db.QueryRowContext(ctx, `
+		SELECT id, certificate_id, kong_target_id, type, status,
+		       message, log, started_at, finished_at, created_at
+		FROM jobs
+		WHERE certificate_id = ?
+		  AND status = ?
+		  AND started_at >= ?
+		  AND type IN (`+typePlaceholders+`)
+		ORDER BY started_at DESC, id DESC
+		LIMIT 1
+	`, args...)
+
+	job, err := scanJob(row)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get latest failed certificate job: %w", err)
+	}
+	return &job, nil
+}
+
 func scanJob(scanner interface {
 	Scan(dest ...any) error
 }) (domain.Job, error) {
@@ -187,4 +247,14 @@ func nullableTime(value *time.Time) any {
 		return nil
 	}
 	return value.UTC().Format("2006-01-02 15:04:05")
+}
+
+func jobTypeFilterArgs(types []domain.JobType) (string, []any) {
+	placeholders := make([]string, 0, len(types))
+	args := make([]any, 0, len(types))
+	for _, jobType := range types {
+		placeholders = append(placeholders, "?")
+		args = append(args, string(jobType))
+	}
+	return strings.Join(placeholders, ", "), args
 }

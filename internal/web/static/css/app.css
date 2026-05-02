@@ -425,6 +425,15 @@ strong {
   min-width: 0;
 }
 
+.app-log-output {
+  max-height: 36rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @media (max-width: 767.98px) {
   .page-header {
     padding-top: 1rem;

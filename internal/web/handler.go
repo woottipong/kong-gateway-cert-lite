@@ -24,7 +24,7 @@ import (
 var templateFiles embed.FS
 
 const flashCookieName = "kong_cert_lite_flash"
-const jobsListLimit = 20
+const jobsListLimit = 50
 
 type Handler struct {
 	logger       *slog.Logger
@@ -78,8 +78,10 @@ type CertificateFormPage struct {
 
 type CertificateDetailPage struct {
 	PageData
-	Certificate usecase.CertificateView
-	LatestJob   *usecase.JobView
+	Certificate        usecase.CertificateView
+	LatestJob          *usecase.JobView
+	ACMEOperation      usecase.ACMEOperationState
+	ACMEActionDisabled bool
 }
 
 type KongTargetListPage struct {
@@ -275,6 +277,10 @@ func (h *Handler) CertificateDetail(c *fiber.Ctx) error {
 	if err != nil {
 		return h.serverError(c, "get latest certificate job", err)
 	}
+	acmeOperation, err := h.acme.OperationState(c.UserContext(), id)
+	if err != nil {
+		return h.serverError(c, "get certificate operation state", err)
+	}
 
 	return h.render(c, fiber.StatusOK, "templates/certificate_detail.html", CertificateDetailPage{
 		PageData: h.pageData(c, PageData{
@@ -284,8 +290,10 @@ func (h *Handler) CertificateDetail(c *fiber.Ctx) error {
 			Description:   "Certificate coverage, workflow, and linked Kong targets.",
 			PrimaryAction: "Renew now",
 		}),
-		Certificate: certificate,
-		LatestJob:   latestJob,
+		Certificate:        certificate,
+		LatestJob:          latestJob,
+		ACMEOperation:      acmeOperation,
+		ACMEActionDisabled: acmeOperation.Blocked,
 	})
 }
 
@@ -339,6 +347,11 @@ func (h *Handler) IssueCertificate(c *fiber.Ctx) error {
 		if errors.Is(err, usecase.ErrNotFound) {
 			return fiber.ErrNotFound
 		}
+		var blockedErr usecase.OperationBlockedError
+		if errors.As(err, &blockedErr) {
+			h.setFlash(c, "warning", blockedErr.Error())
+			return c.Redirect("/certificates/"+strconv.FormatInt(id, 10), fiber.StatusSeeOther)
+		}
 		return h.serverError(c, "issue certificate", err)
 	}
 
@@ -361,6 +374,11 @@ func (h *Handler) RenewCertificate(c *fiber.Ctx) error {
 	if err := h.acme.RenewCertificate(c.UserContext(), id); err != nil {
 		if errors.Is(err, usecase.ErrNotFound) {
 			return fiber.ErrNotFound
+		}
+		var blockedErr usecase.OperationBlockedError
+		if errors.As(err, &blockedErr) {
+			h.setFlash(c, "warning", blockedErr.Error())
+			return c.Redirect("/certificates/"+strconv.FormatInt(id, 10), fiber.StatusSeeOther)
 		}
 		return h.serverError(c, "renew certificate", err)
 	}

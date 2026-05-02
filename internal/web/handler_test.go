@@ -771,6 +771,7 @@ func TestCertificateDetailShowsIssueThenSyncWorkflowForPendingCertificate(t *tes
 		"Issue certificate",
 		"action=\"/certificates/1/issue\"",
 		">Issue certificate<",
+		`data-submitting-label="Issuing..."`,
 		"Sync becomes available after the certificate has been issued.",
 		">Sync to Kong<",
 		"disabled",
@@ -824,6 +825,7 @@ func TestCertificateDetailShowsSyncReadyWorkflowForIssuedCertificate(t *testing.
 		"Certificate already issued",
 		`action="/certificates/1/renew"`,
 		">Renew now<",
+		`data-submitting-label="Renewing..."`,
 		`action="/certificates/1/sync"`,
 		">Sync to Kong<",
 	} {
@@ -833,6 +835,82 @@ func TestCertificateDetailShowsSyncReadyWorkflowForIssuedCertificate(t *testing.
 	}
 	if strings.Contains(body, `action="/certificates/1/issue"`) {
 		t.Fatal("expected issued certificate detail to stop presenting issue action as available")
+	}
+}
+
+func TestCertificateDetailDisablesACMEActionsWhenJobIsRunning(t *testing.T) {
+	database, app := testServer(t)
+	_, err := database.Exec(`
+		INSERT INTO certificates (
+			name, primary_domain, domains_json, email, snis_json, status
+		) VALUES (?, ?, ?, ?, ?, ?)
+	`, "Running wildcard", "running.example.com", `["running.example.com"]`, "ops@example.com", `["running.example.com"]`, "pending")
+	if err != nil {
+		t.Fatalf("insert certificate: %v", err)
+	}
+	_, err = database.Exec(`
+		INSERT INTO jobs (certificate_id, type, status, message, log)
+		VALUES (?, ?, ?, ?, ?)
+	`, 1, "issue", "running", "Issuing certificate", "running")
+	if err != nil {
+		t.Fatalf("insert running job: %v", err)
+	}
+
+	resp, body := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/certificates/1", nil))
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected detail status 200, got %d", resp.StatusCode)
+	}
+	for _, want := range []string{
+		"Certificate action paused.",
+		"An issue or renew job is already running for this certificate.",
+		"This operation is still running. Open the log to review progress.",
+		"Open latest job",
+		`title="An issue or renew job is already running for this certificate."`,
+		"disabled",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected detail body to contain %q", want)
+		}
+	}
+}
+
+func TestCertificateDetailShowsRetryAfterForRecentACMEFailure(t *testing.T) {
+	database, app := testServer(t)
+	startedAt := time.Now().UTC().Add(-10 * time.Minute).Truncate(time.Second)
+	retryAt := startedAt.Add(30 * time.Minute).Format("2006-01-02 15:04 UTC")
+	_, err := database.Exec(`
+		INSERT INTO certificates (
+			name, primary_domain, domains_json, email, snis_json,
+			cert_path, key_path, status
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, "Cooldown wildcard", "cooldown.example.com", `["cooldown.example.com"]`, "ops@example.com", `["cooldown.example.com"]`, "/data/certs/cooldown/fullchain.pem", "/data/certs/cooldown/privkey.pem", "active")
+	if err != nil {
+		t.Fatalf("insert certificate: %v", err)
+	}
+	_, err = database.Exec(`
+		INSERT INTO jobs (certificate_id, type, status, message, log, started_at, finished_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, 1, "renew", "failed", "DNS challenge failed", "failed", startedAt.Format("2006-01-02 15:04:05"), startedAt.Add(10*time.Second).Format("2006-01-02 15:04:05"))
+	if err != nil {
+		t.Fatalf("insert failed job: %v", err)
+	}
+
+	resp, body := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/certificates/1", nil))
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected detail status 200, got %d", resp.StatusCode)
+	}
+	for _, want := range []string{
+		"Certificate action paused.",
+		"The last issue or renew attempt failed recently. Wait 30 minutes before retrying.",
+		"Retry after " + retryAt + ".",
+		`title="The last issue or renew attempt failed recently. Wait 30 minutes before retrying."`,
+		"disabled",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected detail body to contain %q", want)
+		}
 	}
 }
 
@@ -1814,11 +1892,11 @@ func TestJobsListOrdersLatestFirstAndRendersEmptyState(t *testing.T) {
 	}
 }
 
-func TestJobsListShowsOnlyTwentyLatestItems(t *testing.T) {
+func TestJobsListShowsOnlyFiftyLatestItems(t *testing.T) {
 	database, app := testServer(t)
 
-	for i := 1; i <= 21; i++ {
-		startedAt := fmt.Sprintf("2026-04-%02d 10:00:00", i)
+	for i := 1; i <= 51; i++ {
+		startedAt := fmt.Sprintf("2026-04-01 10:%02d:00", i)
 		message := fmt.Sprintf("Job message %02d", i)
 		if _, err := database.Exec(`
 			INSERT INTO jobs (type, status, message, log, started_at, finished_at)
@@ -1836,16 +1914,16 @@ func TestJobsListShowsOnlyTwentyLatestItems(t *testing.T) {
 		t.Fatal("expected latest job to be rendered")
 	}
 	if strings.Contains(body, "Job message 01") {
-		t.Fatal("expected oldest job outside latest 20 to be omitted")
+		t.Fatal("expected oldest job outside latest 50 to be omitted")
 	}
-	if got := strings.Count(body, `class="btn btn-outline-secondary btn-sm" href="/jobs/`); got != 20 {
-		t.Fatalf("expected 20 job rows, got %d", got)
+	if got := strings.Count(body, `class="btn btn-outline-secondary btn-sm" href="/jobs/`); got != 50 {
+		t.Fatalf("expected 50 job rows, got %d", got)
 	}
-	if !strings.Contains(body, "20 of 21 records") {
-		t.Fatal("expected jobs summary count to reflect the 20 latest items")
+	if !strings.Contains(body, "50 of 51 records") {
+		t.Fatal("expected jobs summary count to reflect the 50 latest items")
 	}
-	first := strings.Index(body, "Job message 21")
-	second := strings.Index(body, "Job message 20")
+	first := strings.Index(body, "Job message 51")
+	second := strings.Index(body, "Job message 50")
 	if first == -1 || second == -1 || !(first < second) {
 		t.Fatal("expected latest jobs to remain ordered newest first")
 	}
@@ -1923,7 +2001,9 @@ func TestJobDetailRendersStatusTimingMessageAndLogs(t *testing.T) {
 	for _, want := range []string{
 		`class="badge bg-success-lt text-success text-uppercase">Sync<`,
 		`class="badge bg-danger-lt text-danger">Failed<`,
-		`class="bg-body-secondary border rounded p-3 mb-0 font-monospace small text-body overflow-auto"`,
+		`data-copy-target="#job-log-output"`,
+		`id="job-log-output"`,
+		`app-log-output`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("expected detail body to contain %q", want)

@@ -15,7 +15,8 @@
           {{ if .Certificate.Certificate.CertPath }}
           <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/renew"
             data-confirm="Renew this certificate with ACME DNS-01 and sync linked Kong targets?">
-            <button class="btn btn-success" type="submit">Renew now</button>
+            <button class="btn btn-success" type="submit" {{ if .ACMEActionDisabled }}disabled
+              title="{{ .ACMEOperation.Reason }}"{{ end }} data-submitting-label="Renewing...">Renew now</button>
           </form>
           {{ end }}
           <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/delete"
@@ -30,6 +31,18 @@
 
 <div class="page-body">
   <div class="container-xl">
+    {{ if .ACMEOperation.Blocked }}
+    <div class="alert alert-warning d-flex align-items-start gap-2" role="status">
+      <div class="flex-fill">
+        <strong>Certificate action paused.</strong>
+        <div>{{ .ACMEOperation.Reason }}{{ if .ACMEOperation.RetryAfter }} Retry after {{ .ACMEOperation.RetryAfter }}.{{ end }}</div>
+      </div>
+      {{ with .LatestJob }}
+      <a class="btn btn-outline-warning btn-sm" href="/jobs/{{ .Job.ID }}">Open latest job</a>
+      {{ end }}
+    </div>
+    {{ end }}
+
     <div class="row g-3 align-items-stretch">
       <div class="col-xl-7 d-flex">
         <section class="card h-100 w-100">
@@ -93,6 +106,9 @@
               <div>
                 <div class="subheader">Latest job</div>
                 <div class="text-secondary">{{ .TypeLabel }} · {{ .StatusLabel }} · {{ .StartedAt }}</div>
+                {{ if eq .Job.Status "running" }}
+                <div class="text-warning small mt-1">This operation is still running. Open the log to review progress.</div>
+                {{ end }}
               </div>
               <a class="btn btn-outline-secondary btn-sm" href="/jobs/{{ .Job.ID }}">Open log</a>
             </div>
@@ -141,8 +157,12 @@
                       Kong.</div>
                     <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/issue"
                       data-confirm="Issue this certificate with ACME DNS-01 now?">
-                      <button class="btn btn-success btn-sm" type="submit">Issue certificate</button>
+                      <button class="btn btn-success btn-sm" type="submit" {{ if .ACMEActionDisabled }}disabled
+                        title="{{ .ACMEOperation.Reason }}"{{ end }} data-submitting-label="Issuing...">Issue certificate</button>
                     </form>
+                    {{ if .ACMEOperation.Blocked }}
+                    <div class="text-warning small mt-2">{{ .ACMEOperation.Reason }}</div>
+                    {{ end }}
                     {{ end }}
                   </div>
                 </div>

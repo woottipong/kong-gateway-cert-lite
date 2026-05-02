@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -261,6 +262,122 @@ func TestACMEUseCaseRenewCertificateStoresFilesAndSyncsLinkedTargets(t *testing.
 	}
 	if !sawSyncJob {
 		t.Fatal("expected successful sync job after renew")
+	}
+}
+
+func TestACMEUseCaseBlocksIssueWhenCertificateJobIsRunning(t *testing.T) {
+	ctx := context.Background()
+	database, err := db.Open(filepath.Join(t.TempDir(), "app.db"))
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = database.Close()
+	})
+
+	certificateRepository := sqliteadapter.NewCertificateRepository(database)
+	jobRepository := sqliteadapter.NewJobRepository(database)
+	jobUseCase := NewJobUseCase(jobRepository)
+	fakeClient := &fakeACMEIssueClient{}
+
+	certificateID, err := certificateRepository.Create(ctx, domain.Certificate{
+		Name:            "Running wildcard",
+		PrimaryDomain:   "caption.rtt.in.th",
+		Domains:         []string{"caption.rtt.in.th"},
+		Email:           "ops@rtt.in.th",
+		SNIs:            []string{"caption.rtt.in.th"},
+		AutoRenew:       true,
+		RenewBeforeDays: 30,
+		Status:          domain.CertificateStatusPending,
+	})
+	if err != nil {
+		t.Fatalf("create certificate: %v", err)
+	}
+	if _, err := jobUseCase.Create(ctx, JobInput{
+		CertificateID: &certificateID,
+		Type:          string(domain.JobTypeRenew),
+		Status:        string(domain.JobStatusRunning),
+		Message:       "already renewing",
+	}); err != nil {
+		t.Fatalf("create running job: %v", err)
+	}
+
+	useCase := NewACMEUseCase(certificateRepository, jobUseCase, fakeClient, filepath.Join(t.TempDir(), "certs"))
+	err = useCase.IssueCertificate(ctx, certificateID)
+
+	var blockedErr OperationBlockedError
+	if !errors.As(err, &blockedErr) {
+		t.Fatalf("expected operation blocked error, got %v", err)
+	}
+	if fakeClient.request.Email != "" {
+		t.Fatal("expected ACME client not to be called")
+	}
+}
+
+func TestACMEUseCaseBlocksRenewAfterRecentFailure(t *testing.T) {
+	ctx := context.Background()
+	database, err := db.Open(filepath.Join(t.TempDir(), "app.db"))
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = database.Close()
+	})
+
+	certificateRepository := sqliteadapter.NewCertificateRepository(database)
+	jobRepository := sqliteadapter.NewJobRepository(database)
+	jobUseCase := NewJobUseCase(jobRepository)
+	fakeClient := &fakeACMEIssueClient{}
+
+	oldExpiresAt := time.Now().UTC().Add(48 * time.Hour).Truncate(time.Second)
+	oldCertificatePEM, oldPrivateKeyPEM := issuedCertificateFixture(t, oldExpiresAt)
+	certificateID, err := certificateRepository.Create(ctx, domain.Certificate{
+		Name:            "Cooldown wildcard",
+		PrimaryDomain:   "caption.rtt.in.th",
+		Domains:         []string{"caption.rtt.in.th"},
+		Email:           "ops@rtt.in.th",
+		SNIs:            []string{"caption.rtt.in.th"},
+		AutoRenew:       true,
+		RenewBeforeDays: 30,
+		Status:          domain.CertificateStatusActive,
+	})
+	if err != nil {
+		t.Fatalf("create certificate: %v", err)
+	}
+
+	certDir := filepath.Join(t.TempDir(), "certs")
+	if err := os.MkdirAll(certDir, 0o755); err != nil {
+		t.Fatalf("create cert dir: %v", err)
+	}
+	certPath := filepath.Join(certDir, "fullchain.pem")
+	keyPath := filepath.Join(certDir, "privkey.pem")
+	if err := os.WriteFile(certPath, oldCertificatePEM, 0o600); err != nil {
+		t.Fatalf("write certificate: %v", err)
+	}
+	if err := os.WriteFile(keyPath, oldPrivateKeyPEM, 0o600); err != nil {
+		t.Fatalf("write key: %v", err)
+	}
+	if err := certificateRepository.MarkIssued(ctx, certificateID, certPath, keyPath, oldExpiresAt); err != nil {
+		t.Fatalf("mark issued certificate: %v", err)
+	}
+	if _, err := jobUseCase.Create(ctx, JobInput{
+		CertificateID: &certificateID,
+		Type:          string(domain.JobTypeIssue),
+		Status:        string(domain.JobStatusFailed),
+		Message:       "dns challenge failed",
+	}); err != nil {
+		t.Fatalf("create failed job: %v", err)
+	}
+
+	useCase := NewACMEUseCase(certificateRepository, jobUseCase, fakeClient, certDir)
+	err = useCase.RenewCertificate(ctx, certificateID)
+
+	var blockedErr OperationBlockedError
+	if !errors.As(err, &blockedErr) {
+		t.Fatalf("expected operation blocked error, got %v", err)
+	}
+	if fakeClient.renewRequest.Email != "" {
+		t.Fatal("expected ACME renew client not to be called")
 	}
 }
 

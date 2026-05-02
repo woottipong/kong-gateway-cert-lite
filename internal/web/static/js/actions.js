@@ -108,7 +108,35 @@
       form.requestSubmit(submitter instanceof HTMLElement ? submitter : undefined);
       return;
     }
+    markFormSubmitting(form, submitter);
     form.submit();
+  }
+
+  function markFormSubmitting(form, submitter) {
+    if (!(form instanceof HTMLFormElement)) {
+      return;
+    }
+
+    const button = submitter instanceof HTMLButtonElement
+      ? submitter
+      : form.querySelector("button[type='submit']");
+    if (!button) {
+      return;
+    }
+
+    const label = button.dataset.submittingLabel || form.dataset.submittingLabel;
+    if (!label) {
+      return;
+    }
+
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.textContent = label;
+
+    const busyText = form.querySelector("[data-submit-status]");
+    if (busyText) {
+      busyText.hidden = false;
+    }
   }
 
   function openDialog(form, submitter) {
@@ -146,6 +174,7 @@
 
     if (confirmedForms.has(form)) {
       confirmedForms.delete(form);
+      markFormSubmitting(form, event.submitter);
       return;
     }
 
@@ -162,6 +191,7 @@
           form.requestSubmit(event.submitter);
           return;
         }
+        markFormSubmitting(form, event.submitter);
         form.submit();
       }
     }
@@ -171,6 +201,12 @@
     const row = event.target.closest("tr[data-row-href]");
     if (row && !event.target.closest("[onclick], a, button, .dropdown, form")) {
       window.location.href = row.dataset.rowHref;
+      return;
+    }
+
+    const copyButton = event.target.closest("[data-copy-target]");
+    if (copyButton) {
+      copyTextFromTarget(copyButton);
       return;
     }
 
@@ -188,6 +224,54 @@
       submitConfirmed(parts);
     }
   });
+
+  function copyTextFromTarget(button) {
+    if (!(button instanceof HTMLElement)) {
+      return;
+    }
+
+    const selector = button.dataset.copyTarget;
+    const target = selector ? document.querySelector(selector) : null;
+    if (!target) {
+      return;
+    }
+
+    const text = target.textContent || "";
+    const original = button.textContent || "Copy";
+
+    function markCopied() {
+      button.textContent = "Copied";
+      window.setTimeout(function () {
+        button.textContent = original;
+      }, 1600);
+    }
+
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      navigator.clipboard.writeText(text).then(markCopied).catch(function () {
+        fallbackCopy(text, markCopied);
+      });
+      return;
+    }
+
+    fallbackCopy(text, markCopied);
+  }
+
+  function fallbackCopy(text, onCopied) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      if (document.execCommand("copy")) {
+        onCopied();
+      }
+    } finally {
+      textarea.remove();
+    }
+  }
 
   document.addEventListener("keydown", function (event) {
     const parts = getDialogParts();

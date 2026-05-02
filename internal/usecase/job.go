@@ -16,6 +16,8 @@ type JobRepository interface {
 	Get(ctx context.Context, id int64) (domain.Job, error)
 	Create(ctx context.Context, job domain.Job) (int64, error)
 	Update(ctx context.Context, job domain.Job) error
+	HasRunningCertificateJob(ctx context.Context, certificateID int64, types []domain.JobType) (bool, error)
+	LatestFailedCertificateJobSince(ctx context.Context, certificateID int64, types []domain.JobType, since time.Time) (*domain.Job, error)
 }
 
 type JobUseCase struct {
@@ -114,6 +116,20 @@ func (uc *JobUseCase) Complete(ctx context.Context, input JobCompleteInput) erro
 	existing.FinishedAt = &now
 
 	return uc.repository.Update(ctx, existing)
+}
+
+func (uc *JobUseCase) HasRunningCertificateJob(ctx context.Context, certificateID int64, types []domain.JobType) (bool, error) {
+	if uc == nil || uc.repository == nil {
+		return false, fmt.Errorf("job dependencies are not configured")
+	}
+	return uc.repository.HasRunningCertificateJob(ctx, certificateID, types)
+}
+
+func (uc *JobUseCase) LatestFailedCertificateJobSince(ctx context.Context, certificateID int64, types []domain.JobType, since time.Time) (*domain.Job, error) {
+	if uc == nil || uc.repository == nil {
+		return nil, fmt.Errorf("job dependencies are not configured")
+	}
+	return uc.repository.LatestFailedCertificateJobSince(ctx, certificateID, types, since)
 }
 
 func ParseJobID(value string) (int64, error) {

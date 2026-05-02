@@ -57,11 +57,16 @@
             <div>
               <h2 class="card-title">Log output</h2>
             </div>
+            {{ if .Job.Job.Log }}
+            <div class="card-actions">
+              <button class="btn btn-outline-secondary btn-sm" type="button" data-copy-target="#job-log-output">Copy</button>
+            </div>
+            {{ end }}
           </div>
           <div class="card-body">
             {{ if .Job.Job.Log }}
-            <pre
-              class="bg-body-secondary border rounded p-3 mb-0 font-monospace small text-body overflow-auto">{{ .Job.Job.Log }}</pre>
+            <pre id="job-log-output"
+              class="bg-body-secondary border rounded p-3 mb-0 font-monospace small text-body app-log-output">{{ .Job.Job.Log }}</pre>
             {{ else }}
             {{ template "empty_state" . }}
             {{ end }}

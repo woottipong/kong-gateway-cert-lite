@@ -15,6 +15,24 @@ import (
 	"kong-cert-lite/internal/domain"
 )
 
+const acmeRetryCooldown = 15 * time.Minute
+
+var acmeJobTypes = []domain.JobType{domain.JobTypeIssue, domain.JobTypeRenew}
+
+type OperationBlockedError struct {
+	Message string
+}
+
+func (e OperationBlockedError) Error() string {
+	return e.Message
+}
+
+type ACMEOperationState struct {
+	Blocked    bool
+	Reason     string
+	RetryAfter string
+}
+
 type IssueCertificateRepository interface {
 	Get(ctx context.Context, id int64) (domain.Certificate, error)
 	MarkIssued(ctx context.Context, id int64, certPath string, keyPath string, expiresAt time.Time) error
@@ -71,6 +89,10 @@ func (uc *ACMEUseCase) SetNotifier(notifier Notifier, notifySuccess bool) {
 	uc.notifySuccess = notifySuccess
 }
 
+func (uc *ACMEUseCase) OperationState(ctx context.Context, certificateID int64) (ACMEOperationState, error) {
+	return uc.acmeOperationState(ctx, certificateID, time.Now().UTC())
+}
+
 func (uc *ACMEUseCase) IssueCertificate(ctx context.Context, certificateID int64) error {
 	if uc.certificates == nil || uc.jobs == nil || uc.client == nil {
 		return fmt.Errorf("acme issue dependencies are not configured")
@@ -81,6 +103,9 @@ func (uc *ACMEUseCase) IssueCertificate(ctx context.Context, certificateID int64
 		if errors.Is(err, domain.ErrNotFound) {
 			return ErrNotFound
 		}
+		return err
+	}
+	if err := uc.ensureACMEOperationAllowed(ctx, certificate.ID); err != nil {
 		return err
 	}
 
@@ -156,6 +181,9 @@ func (uc *ACMEUseCase) RenewCertificate(ctx context.Context, certificateID int64
 		}
 		return err
 	}
+	if err := uc.ensureACMEOperationAllowed(ctx, certificate.ID); err != nil {
+		return err
+	}
 
 	jobID, err := uc.jobs.Create(ctx, JobInput{
 		CertificateID: &certificate.ID,
@@ -226,6 +254,45 @@ func (uc *ACMEUseCase) RenewCertificate(ctx context.Context, certificateID int64
 	}
 
 	return nil
+}
+
+func (uc *ACMEUseCase) ensureACMEOperationAllowed(ctx context.Context, certificateID int64) error {
+	state, err := uc.acmeOperationState(ctx, certificateID, time.Now().UTC())
+	if err != nil {
+		return err
+	}
+	if state.Blocked {
+		return OperationBlockedError{Message: state.Reason}
+	}
+	return nil
+}
+
+func (uc *ACMEUseCase) acmeOperationState(ctx context.Context, certificateID int64, now time.Time) (ACMEOperationState, error) {
+	running, err := uc.jobs.HasRunningCertificateJob(ctx, certificateID, acmeJobTypes)
+	if err != nil {
+		return ACMEOperationState{}, err
+	}
+	if running {
+		return ACMEOperationState{
+			Blocked: true,
+			Reason:  "An issue or renew job is already running for this certificate.",
+		}, nil
+	}
+
+	recentFailure, err := uc.jobs.LatestFailedCertificateJobSince(ctx, certificateID, acmeJobTypes, now.UTC().Add(-acmeRetryCooldown))
+	if err != nil {
+		return ACMEOperationState{}, err
+	}
+	if recentFailure != nil {
+		retryAt := recentFailure.StartedAt.UTC().Add(acmeRetryCooldown)
+		return ACMEOperationState{
+			Blocked:    true,
+			Reason:     "The last issue or renew attempt failed recently. Wait 15 minutes before retrying.",
+			RetryAfter: retryAt.Format("2006-01-02 15:04 UTC"),
+		}, nil
+	}
+
+	return ACMEOperationState{}, nil
 }
 
 func (uc *ACMEUseCase) failIssue(ctx context.Context, certificate domain.Certificate, jobID int64, cause error) error {

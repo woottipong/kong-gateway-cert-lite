@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       APP_DB_PATH: /data/app.db
       APP_CERT_DIR: /data/certs
@@ -11,7 +14,7 @@ services:
       APP_PASSWORD: ${APP_PASSWORD:-admin1234}
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       DISCORD_NOTIFY_SUCCESS: ${DISCORD_NOTIFY_SUCCESS:-false}
-      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:-}
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:-_9wKMi1Jr4XxG-8ckhsTSsjvKV2ImWdTkK8SDKgs}
       LETSENCRYPT_ENV: ${LETSENCRYPT_ENV:-staging}
       AUTO_RENEW_CRON: ${AUTO_RENEW_CRON:-0 3 * * *}
     ports:
