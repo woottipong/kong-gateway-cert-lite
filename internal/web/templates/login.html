@@ -1,0 +1,93 @@
+{{ define "login" }}
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ .Title }} - Kong CertOps</title>
+  <link rel="stylesheet" href="/static/tabler/tabler.min.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+
+<body class="login-body">
+  <main class="login-shell">
+    <section class="login-visual" aria-labelledby="login-title">
+      <div class="login-brand-mark" aria-hidden="true">
+        <svg class="brand-logo" width="48" height="48" viewBox="0 0 40 40" fill="none"
+          xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="login-brand-shell" x1="4" y1="3" x2="36" y2="37" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#242c38" />
+              <stop offset="52%" stop-color="#111821" />
+              <stop offset="100%" stop-color="#070a0f" />
+            </linearGradient>
+            <linearGradient id="login-brand-face" x1="11" y1="9" x2="29" y2="31" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#19212c" />
+              <stop offset="100%" stop-color="#0b1017" />
+            </linearGradient>
+            <linearGradient id="login-brand-mark" x1="15" y1="13" x2="25" y2="27" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#f4f7fb" />
+              <stop offset="100%" stop-color="#aeb8c6" />
+            </linearGradient>
+          </defs>
+          <rect x="2.5" y="2.5" width="35" height="35" rx="11" fill="url(#login-brand-shell)" stroke="#3a4554" />
+          <path d="M11.8 10.2h11l5.4 5.4v14.2H11.8V10.2Z" fill="url(#login-brand-face)" stroke="#526071"
+            stroke-width="1.25" />
+          <path d="M22.8 10.2v5.4h5.4" stroke="#778294" stroke-width="1.15" stroke-linejoin="round" />
+          <path d="M16.5 15.4v10.2M24.2 15.9l-7.7 5 7.7 5" stroke="url(#login-brand-mark)"
+            stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M27.3 25.8a3.7 3.7 0 0 1 3.1 3.6" stroke="#1DB954" stroke-width="1.35"
+            stroke-linecap="round" />
+          <circle cx="30.4" cy="29.7" r="2.15" fill="#1DB954" />
+        </svg>
+      </div>
+      <div>
+        <p class="login-kicker">TLS operations console</p>
+        <h1 id="login-title">Kong CertOps</h1>
+        <p class="login-copy">Sign in to manage certificate metadata, issue renewals, and sync trusted TLS material to Kong.</p>
+      </div>
+      <div class="login-status-grid" aria-label="Console status">
+        <div>
+          <span>Access</span>
+          <strong>{{ if .HasAuth }}Protected{{ else }}Open{{ end }}</strong>
+        </div>
+        <div>
+          <span>Session</span>
+          <strong>12 hours</strong>
+        </div>
+        <div>
+          <span>UTC</span>
+          <strong>{{ .CurrentUTC }}</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="login-panel" aria-label="Sign in">
+      <form method="post" action="/login" novalidate>
+        <input type="hidden" name="return_to" value="{{ .ReturnTo }}">
+        <div class="login-panel-header">
+          <p class="subheader mb-2">Operator sign in</p>
+          <h2>Continue to console</h2>
+        </div>
+        {{ if .Error }}
+        <div class="alert alert-danger" role="alert">{{ .Error }}</div>
+        {{ end }}
+        <div class="mb-3">
+          <label class="form-label" for="username">Username</label>
+          <input class="form-control" id="username" name="username" value="{{ .Username }}" autocomplete="username"
+            required autofocus>
+        </div>
+        <div class="mb-4">
+          <label class="form-label" for="password">Password</label>
+          <input class="form-control" id="password" name="password" type="password" autocomplete="current-password"
+            required>
+        </div>
+        <button class="btn btn-success w-100" type="submit">Sign in</button>
+      </form>
+    </section>
+  </main>
+</body>
+
+</html>
+{{ end }}

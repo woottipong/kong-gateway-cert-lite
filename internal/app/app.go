@@ -69,7 +69,10 @@ func New(cfg Config, logger *slog.Logger) (*App, error) {
 }
 
 func (a *App) HTTPApp() *fiber.App {
-	return web.NewApp(a.logger, a.certificates, a.acme, a.kongSync, a.kongTargets, a.jobs)
+	return web.NewApp(a.logger, a.certificates, a.acme, a.kongSync, a.kongTargets, a.jobs, web.BasicAuthConfig{
+		Username: a.cfg.Username,
+		Password: a.cfg.Password,
+	})
 }
 
 func (a *App) Close() error {

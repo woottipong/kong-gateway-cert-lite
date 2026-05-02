@@ -20,6 +20,8 @@ type Config struct {
 	DBPath          string
 	CertDir         string
 	AccountDir      string
+	Username        string
+	Password        string
 	CloudflareToken string
 	LetsEncryptEnv  string
 	AutoRenewCron   string
@@ -31,6 +33,8 @@ func LoadConfig() (Config, error) {
 		DBPath:          envOrDefault("APP_DB_PATH", defaultDBPath),
 		CertDir:         envOrDefault("APP_CERT_DIR", defaultCertDir),
 		AccountDir:      envOrDefault("APP_ACCOUNT_DIR", defaultAccountDir),
+		Username:        strings.TrimSpace(os.Getenv("APP_USERNAME")),
+		Password:        os.Getenv("APP_PASSWORD"),
 		CloudflareToken: strings.TrimSpace(os.Getenv("CF_DNS_API_TOKEN")),
 		LetsEncryptEnv:  strings.ToLower(strings.TrimSpace(envOrDefault("LETSENCRYPT_ENV", defaultLetsEncryptEnv))),
 		AutoRenewCron:   strings.TrimSpace(envOrDefault("AUTO_RENEW_CRON", defaultAutoRenewCron)),
@@ -55,6 +59,12 @@ func (c Config) Validate() error {
 	}
 	if strings.TrimSpace(c.AccountDir) == "" {
 		return fmt.Errorf("APP_ACCOUNT_DIR must not be empty")
+	}
+	if strings.TrimSpace(c.Username) == "" && c.Password != "" {
+		return fmt.Errorf("APP_USERNAME must be set when APP_PASSWORD is set")
+	}
+	if strings.TrimSpace(c.Username) != "" && c.Password == "" {
+		return fmt.Errorf("APP_PASSWORD must be set when APP_USERNAME is set")
 	}
 	switch c.LetsEncryptEnv {
 	case "staging", "production":

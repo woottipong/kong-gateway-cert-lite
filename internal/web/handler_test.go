@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	acmeadapter "kong-cert-lite/internal/adapter/acme"
 	kongadapter "kong-cert-lite/internal/adapter/kong"
@@ -107,6 +108,126 @@ func TestStaticAssets(t *testing.T) {
 				t.Fatal("expected static asset body")
 			}
 		})
+	}
+}
+
+func TestSessionAuthRedirectsUIRoutesToLogin(t *testing.T) {
+	_, app := testServerWithAuth(t, BasicAuthConfig{Username: "operator", Password: "secret"})
+
+	resp, _ := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/certificates", nil))
+
+	if resp.StatusCode != fiber.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", resp.StatusCode)
+	}
+	location := resp.Header.Get("Location")
+	if !strings.HasPrefix(location, "/login?return_to=") {
+		t.Fatalf("expected redirect to login, got %q", location)
+	}
+}
+
+func TestLoginPageRenders(t *testing.T) {
+	_, app := testServerWithAuth(t, BasicAuthConfig{Username: "operator", Password: "secret"})
+
+	resp, body := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/login?return_to=%2Fjobs", nil))
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+	for _, want := range []string{
+		"Kong CertOps",
+		"Operator sign in",
+		`name="return_to" value="/jobs"`,
+		`name="username"`,
+		`name="password"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected login body to contain %q", want)
+		}
+	}
+}
+
+func TestLoginRejectsInvalidCredentials(t *testing.T) {
+	_, app := testServerWithAuth(t, BasicAuthConfig{Username: "operator", Password: "secret"})
+	form := url.Values{
+		"username":  {"operator"},
+		"password":  {"wrong"},
+		"return_to": {"/certificates"},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, body := doRequest(t, app, req)
+
+	if resp.StatusCode != fiber.StatusUnauthorized {
+		t.Fatalf("expected status 401, got %d", resp.StatusCode)
+	}
+	if !strings.Contains(body, "Username or password is incorrect.") {
+		t.Fatal("expected invalid login error")
+	}
+}
+
+func TestLoginCreatesSession(t *testing.T) {
+	_, app := testServerWithAuth(t, BasicAuthConfig{Username: "operator", Password: "secret"})
+	form := url.Values{
+		"username":  {"operator"},
+		"password":  {"secret"},
+		"return_to": {"/certificates"},
+	}
+	loginReq := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
+	loginReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	loginResp, _ := doRequest(t, app, loginReq)
+
+	if loginResp.StatusCode != fiber.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", loginResp.StatusCode)
+	}
+	if location := loginResp.Header.Get("Location"); location != "/certificates" {
+		t.Fatalf("expected certificates redirect, got %q", location)
+	}
+	cookies := loginResp.Cookies()
+	if len(cookies) == 0 {
+		t.Fatal("expected session cookie")
+	}
+
+	certReq := httptest.NewRequest(http.MethodGet, "/certificates", nil)
+	for _, cookie := range cookies {
+		certReq.AddCookie(cookie)
+	}
+	certResp, body := doRequest(t, app, certReq)
+	if certResp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", certResp.StatusCode)
+	}
+	if !strings.Contains(body, "Certificates") {
+		t.Fatal("expected authenticated certificates page")
+	}
+}
+
+func TestLogoutClearsSession(t *testing.T) {
+	_, app := testServerWithAuth(t, BasicAuthConfig{Username: "operator", Password: "secret"})
+	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
+	req.AddCookie(&http.Cookie{Name: authCookieName, Value: createSessionToken(BasicAuthConfig{Username: "operator", Password: "secret"}, time.Now().Add(authSessionTTL))})
+
+	resp, _ := doRequest(t, app, req)
+
+	if resp.StatusCode != fiber.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", resp.StatusCode)
+	}
+	setCookie := resp.Header.Get("Set-Cookie")
+	if !strings.Contains(setCookie, authCookieName+"=") || !strings.Contains(setCookie, "expires=Thu, 01 Jan 1970") {
+		t.Fatal("expected logout to clear session cookie")
+	}
+}
+
+func TestSessionAuthAllowsHealthz(t *testing.T) {
+	_, app := testServerWithAuth(t, BasicAuthConfig{Username: "operator", Password: "secret"})
+
+	resp, body := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+	if strings.TrimSpace(body) != `{"status":"ok"}` {
+		t.Fatalf("unexpected body %q", body)
 	}
 }
 
@@ -1797,6 +1918,12 @@ func testApp(t *testing.T) *fiber.App {
 func testServer(t *testing.T) (*sql.DB, *fiber.App) {
 	t.Helper()
 
+	return testServerWithAuth(t, BasicAuthConfig{})
+}
+
+func testServerWithAuth(t *testing.T, auth BasicAuthConfig) (*sql.DB, *fiber.App) {
+	t.Helper()
+
 	database, err := db.Open(filepath.Join(t.TempDir(), "app.db"))
 	if err != nil {
 		t.Fatalf("open test database: %v", err)
@@ -1818,7 +1945,7 @@ func testServer(t *testing.T) (*sql.DB, *fiber.App) {
 	acmeUseCase := usecase.NewACMEUseCase(certificateRepository, jobUseCase, acmeClient, filepath.Join(t.TempDir(), "certs"), kongSyncUseCase)
 	kongTargetUseCase := usecase.NewKongTargetUseCase(kongTargetRepository, kongAdminClient, jobUseCase)
 
-	return database, NewApp(nil, certificateUseCase, acmeUseCase, kongSyncUseCase, kongTargetUseCase, jobUseCase)
+	return database, NewApp(nil, certificateUseCase, acmeUseCase, kongSyncUseCase, kongTargetUseCase, jobUseCase, auth)
 }
 
 func doRequest(t *testing.T, app *fiber.App, req *http.Request) (*http.Response, string) {

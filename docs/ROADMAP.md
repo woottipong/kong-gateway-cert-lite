@@ -4,10 +4,10 @@ This document outlines the prioritized enhancements and hardening steps required
 
 ## Phase 1: Security and Hardening (Critical)
 
-### 1. Basic Authentication
-Current status: No authentication.
+### 1. Operator Login
+Current status: Implemented with an optional built-in login page and signed session cookie.
 - **Goal**: Protect the UI and API from unauthorized access.
-- **Plan**: Implement a simple Basic Auth middleware using environment variables (`APP_USERNAME`, `APP_PASSWORD`).
+- **Plan**: Implement a simple login flow using environment variables (`APP_USERNAME`, `APP_PASSWORD`).
 - **Benefit**: Ensures only authorized operators can manage certificates and sync to Kong.
 
 ### 2. Secret Hardening

@@ -6,6 +6,8 @@ import (
 )
 
 func TestLoadConfigUsesDefaultAddrWhenEnvMissing(t *testing.T) {
+	t.Setenv("APP_USERNAME", "")
+	t.Setenv("APP_PASSWORD", "")
 	previous, hadPrevious := os.LookupEnv("APP_ADDR")
 	if err := os.Unsetenv("APP_ADDR"); err != nil {
 		t.Fatalf("unset APP_ADDR: %v", err)
@@ -40,6 +42,12 @@ func TestLoadConfigUsesDefaultAddrWhenEnvMissing(t *testing.T) {
 	if cfg.AutoRenewCron != defaultAutoRenewCron {
 		t.Fatalf("expected default auto renew cron %q, got %q", defaultAutoRenewCron, cfg.AutoRenewCron)
 	}
+	if cfg.Username != "" {
+		t.Fatalf("expected default username to be empty, got %q", cfg.Username)
+	}
+	if cfg.Password != "" {
+		t.Fatal("expected default password to be empty")
+	}
 }
 
 func TestLoadConfigRejectsEmptyAddr(t *testing.T) {
@@ -57,6 +65,8 @@ func TestLoadConfigRejectsEmptyAddr(t *testing.T) {
 func TestLoadConfigReadsAddrFromEnv(t *testing.T) {
 	t.Setenv("APP_ADDR", "127.0.0.1:9090")
 	t.Setenv("APP_DB_PATH", "/tmp/kong-cert-lite-test.db")
+	t.Setenv("APP_USERNAME", "operator")
+	t.Setenv("APP_PASSWORD", "secret")
 
 	cfg, err := LoadConfig()
 	if err != nil {
@@ -73,6 +83,12 @@ func TestLoadConfigReadsAddrFromEnv(t *testing.T) {
 	}
 	if cfg.AccountDir != defaultAccountDir {
 		t.Fatalf("expected default account dir when env missing, got %q", cfg.AccountDir)
+	}
+	if cfg.Username != "operator" {
+		t.Fatalf("expected APP_USERNAME override, got %q", cfg.Username)
+	}
+	if cfg.Password != "secret" {
+		t.Fatal("expected APP_PASSWORD override")
 	}
 }
 
@@ -113,6 +129,29 @@ func TestConfigValidateRejectsInvalidLetsEncryptEnv(t *testing.T) {
 
 	if err := cfg.Validate(); err == nil {
 		t.Fatal("expected invalid letsencrypt env validation error")
+	}
+}
+
+func TestConfigValidateRejectsPartialBasicAuth(t *testing.T) {
+	base := Config{
+		Addr:           ":8080",
+		DBPath:         "/tmp/app.db",
+		CertDir:        "/tmp/certs",
+		AccountDir:     "/tmp/accounts",
+		LetsEncryptEnv: "staging",
+		AutoRenewCron:  defaultAutoRenewCron,
+	}
+
+	cfg := base
+	cfg.Username = "operator"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected username without password validation error")
+	}
+
+	cfg = base
+	cfg.Password = "secret"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected password without username validation error")
 	}
 }
 

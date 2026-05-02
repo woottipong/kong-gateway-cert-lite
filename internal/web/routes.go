@@ -17,14 +17,25 @@ import (
 //go:embed static/tabler/*
 var staticFiles embed.FS
 
-func NewApp(logger *slog.Logger, certificates *usecase.CertificateUseCase, acme *usecase.ACMEUseCase, kongSync *usecase.KongSyncUseCase, kongTargets *usecase.KongTargetUseCase, jobs *usecase.JobUseCase) *fiber.App {
+func NewApp(logger *slog.Logger, certificates *usecase.CertificateUseCase, acme *usecase.ACMEUseCase, kongSync *usecase.KongSyncUseCase, kongTargets *usecase.KongTargetUseCase, jobs *usecase.JobUseCase, authConfig ...BasicAuthConfig) *fiber.App {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
 	handler := NewHandler(logger, certificates, acme, kongSync, kongTargets, jobs)
+	auth := BasicAuthConfig{}
+	if len(authConfig) > 0 {
+		auth = authConfig[0]
+	}
 
 	app.Get("/healthz", handler.Healthz)
+	app.Get("/login", LoginPageHandler(auth))
+	app.Post("/login", LoginPostHandler(auth))
+	app.Use("/static", filesystem.New(filesystem.Config{
+		Root: http.FS(staticFS()),
+	}))
+	app.Use(NewSessionAuthMiddleware(auth))
 	app.Get("/", handler.Home)
+	app.Post("/logout", LogoutHandler())
 	app.Get("/certificates", handler.Certificates)
 	app.Get("/certificates/new", handler.NewCertificate)
 	app.Post("/certificates", handler.CreateCertificate)
@@ -46,13 +57,13 @@ func NewApp(logger *slog.Logger, certificates *usecase.CertificateUseCase, acme 
 	app.Get("/jobs", handler.Jobs)
 	app.Get("/jobs/:id", handler.JobDetail)
 
+	return app
+}
+
+func staticFS() fs.FS {
 	staticFS, err := fs.Sub(staticFiles, "static")
 	if err != nil {
 		panic(err)
 	}
-	app.Use("/static", filesystem.New(filesystem.Config{
-		Root: http.FS(staticFS),
-	}))
-
-	return app
+	return staticFS
 }

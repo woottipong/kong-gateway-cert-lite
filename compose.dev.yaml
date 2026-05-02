@@ -7,6 +7,8 @@ services:
       APP_DB_PATH: /data/app.db
       APP_CERT_DIR: /data/certs
       APP_ACCOUNT_DIR: /data/accounts
+      APP_USERNAME: ${APP_USERNAME:-admin}
+      APP_PASSWORD: ${APP_PASSWORD:-admin1234}
       CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:-}
       LETSENCRYPT_ENV: ${LETSENCRYPT_ENV:-staging}
       AUTO_RENEW_CRON: ${AUTO_RENEW_CRON:-0 3 * * *}

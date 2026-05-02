@@ -9,6 +9,8 @@ services:
       APP_DB_PATH: /data/app.db
       APP_CERT_DIR: /data/certs
       APP_ACCOUNT_DIR: /data/accounts
+      APP_USERNAME: ${APP_USERNAME:?Set APP_USERNAME for Basic Auth}
+      APP_PASSWORD: ${APP_PASSWORD:?Set APP_PASSWORD for Basic Auth}
       CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:?Set CF_DNS_API_TOKEN for Cloudflare DNS-01}
       LETSENCRYPT_ENV: ${LETSENCRYPT_ENV:-staging}
       AUTO_RENEW_CRON: ${AUTO_RENEW_CRON:-0 3 * * *}
