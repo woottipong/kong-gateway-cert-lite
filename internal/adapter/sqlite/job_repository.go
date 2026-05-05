@@ -119,6 +119,22 @@ func (r *JobRepository) Update(ctx context.Context, job domain.Job) error {
 	return nil
 }
 
+func (r *JobRepository) DeleteCompleted(ctx context.Context) (int64, error) {
+	result, err := r.db.ExecContext(ctx, `
+		DELETE FROM jobs
+		WHERE status IN (?, ?)
+	`, string(domain.JobStatusSuccess), string(domain.JobStatusFailed))
+	if err != nil {
+		return 0, fmt.Errorf("delete completed jobs: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("read deleted job count: %w", err)
+	}
+	return rowsAffected, nil
+}
+
 func (r *JobRepository) HasRunningCertificateJob(ctx context.Context, certificateID int64, types []domain.JobType) (bool, error) {
 	if certificateID <= 0 || len(types) == 0 {
 		return false, nil

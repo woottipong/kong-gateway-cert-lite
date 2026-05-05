@@ -596,6 +596,20 @@ func (h *Handler) Jobs(c *fiber.Ctx) error {
 	})
 }
 
+func (h *Handler) ClearJobs(c *fiber.Ctx) error {
+	deleted, err := h.jobs.ClearCompleted(c.UserContext())
+	if err != nil {
+		return h.serverError(c, "clear jobs", err)
+	}
+
+	if deleted == 0 {
+		h.setFlash(c, "warning", "No completed logs were available to clear.")
+	} else {
+		h.setFlash(c, "success", fmt.Sprintf("Cleared %d completed logs.", deleted))
+	}
+	return c.Redirect("/jobs", fiber.StatusSeeOther)
+}
+
 func (h *Handler) JobDetail(c *fiber.Ctx) error {
 	id, err := usecase.ParseJobID(c.Params("id"))
 	if err != nil {

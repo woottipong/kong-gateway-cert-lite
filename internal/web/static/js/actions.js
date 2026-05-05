@@ -344,6 +344,27 @@
 })();
 
 (function () {
+  function initAutoRenewPolicy() {
+    var toggle = document.querySelector("[data-auto-renew-toggle]");
+    var days = document.querySelector("[data-auto-renew-days]");
+    if (!toggle || !days) return;
+
+    function sync() {
+      days.disabled = !toggle.checked;
+    }
+
+    toggle.addEventListener("change", sync);
+    sync();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAutoRenewPolicy);
+  } else {
+    initAutoRenewPolicy();
+  }
+})();
+
+(function () {
   function initTagInputs() {
     document.querySelectorAll("[data-tag-for]").forEach(function (container) {
       var name = container.dataset.tagFor;

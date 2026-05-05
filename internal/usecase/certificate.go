@@ -15,6 +15,11 @@ import (
 
 var ErrNotFound = domain.ErrNotFound
 
+const (
+	MinRenewBeforeDays = 1
+	MaxRenewBeforeDays = 90
+)
+
 type CertificateRepository interface {
 	List(ctx context.Context) ([]domain.Certificate, error)
 	Get(ctx context.Context, id int64) (domain.Certificate, error)
@@ -234,8 +239,8 @@ func validateCertificateInput(input CertificateInput) (domain.Certificate, error
 	if len(certificate.SNIs) == 0 {
 		fields["snis"] = "Add at least one SNI value."
 	}
-	if certificate.RenewBeforeDays <= 0 {
-		fields["renew_before_days"] = "Renew before days must be greater than 0."
+	if certificate.RenewBeforeDays < MinRenewBeforeDays || certificate.RenewBeforeDays > MaxRenewBeforeDays {
+		fields["renew_before_days"] = fmt.Sprintf("Renew before days must be between %d and %d.", MinRenewBeforeDays, MaxRenewBeforeDays)
 	}
 
 	if len(fields) > 0 {

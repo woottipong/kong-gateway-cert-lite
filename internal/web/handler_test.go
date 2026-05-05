@@ -125,6 +125,19 @@ func TestSessionAuthRedirectsUIRoutesToLogin(t *testing.T) {
 	}
 }
 
+func TestSessionAuthRedirectsRootLoginReturnToCertificates(t *testing.T) {
+	_, app := testServerWithAuth(t, BasicAuthConfig{Username: "operator", Password: "secret"})
+
+	resp, _ := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	if resp.StatusCode != fiber.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", resp.StatusCode)
+	}
+	if location := resp.Header.Get("Location"); location != "/login?return_to=%2Fcertificates" {
+		t.Fatalf("expected root login redirect to certificates, got %q", location)
+	}
+}
+
 func TestLoginPageRenders(t *testing.T) {
 	_, app := testServerWithAuth(t, BasicAuthConfig{Username: "operator", Password: "secret"})
 
@@ -1011,7 +1024,7 @@ func TestCreateCertificateValidationErrors(t *testing.T) {
 		"A valid email address is required.",
 		"Add at least one domain.",
 		"Add at least one SNI value.",
-		"Renew before days must be greater than 0.",
+		"Renew before days must be between 1 and 90.",
 		`<h1 class="page-title">Add certificate</h1>`,
 		`data-tag-for="domains" data-tag-label="Domains" data-tag-invalid="true" data-tag-describedby="error-domains hint-domains"`,
 		`id="domains" name="domains" aria-label="Domains" tabindex="-1"`,
@@ -1022,6 +1035,29 @@ func TestCreateCertificateValidationErrors(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("expected validation body to contain %q", want)
 		}
+	}
+}
+
+func TestCreateCertificateRejectsExcessiveRenewBeforeDays(t *testing.T) {
+	_, app := testServer(t)
+	form := url.Values{
+		"name":              {"Production wildcard"},
+		"email":             {"ops@example.com"},
+		"domains":           {"example.com"},
+		"snis":              {"example.com"},
+		"auto_renew":        {"on"},
+		"renew_before_days": {"120"},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/certificates", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, body := doRequest(t, app, req)
+
+	if resp.StatusCode != fiber.StatusUnprocessableEntity {
+		t.Fatalf("expected status 422, got %d", resp.StatusCode)
+	}
+	if !strings.Contains(body, "Renew before days must be between 1 and 90.") {
+		t.Fatal("expected renew_before_days max validation error")
 	}
 }
 
@@ -1926,6 +1962,41 @@ func TestJobsListShowsOnlyFiftyLatestItems(t *testing.T) {
 	second := strings.Index(body, "Job message 50")
 	if first == -1 || second == -1 || !(first < second) {
 		t.Fatal("expected latest jobs to remain ordered newest first")
+	}
+}
+
+func TestClearJobsDeletesCompletedLogsAndKeepsRunning(t *testing.T) {
+	database, app := testServer(t)
+	_, err := database.Exec(`
+		INSERT INTO jobs (type, status, message, log, started_at, finished_at)
+		VALUES
+			('sync', 'success', 'Sync complete', 'sync log', '2026-04-25 10:00:00', '2026-04-25 10:01:00'),
+			('renew', 'failed', 'Renew failed', 'renew log', '2026-04-26 10:00:00', '2026-04-26 10:03:00'),
+			('test_kong', 'running', 'Testing Kong target', 'testing log', '2026-04-26 11:00:00', NULL)
+	`)
+	if err != nil {
+		t.Fatalf("insert jobs: %v", err)
+	}
+
+	resp, _ := doRequest(t, app, httptest.NewRequest(http.MethodPost, "/jobs/clear", nil))
+
+	if resp.StatusCode != fiber.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", resp.StatusCode)
+	}
+	if location := resp.Header.Get("Location"); location != "/jobs" {
+		t.Fatalf("expected jobs redirect, got %q", location)
+	}
+
+	var total int
+	var running int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM jobs`).Scan(&total); err != nil {
+		t.Fatalf("count jobs: %v", err)
+	}
+	if err := database.QueryRow(`SELECT COUNT(*) FROM jobs WHERE status = 'running'`).Scan(&running); err != nil {
+		t.Fatalf("count running jobs: %v", err)
+	}
+	if total != 1 || running != 1 {
+		t.Fatalf("expected only one running job after clear, got total=%d running=%d", total, running)
 	}
 }
 

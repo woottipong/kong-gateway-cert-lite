@@ -55,6 +55,7 @@ func NewApp(logger *slog.Logger, certificates *usecase.CertificateUseCase, acme 
 	app.Post("/kong-targets/:id/delete", handler.DeleteKongTarget)
 	app.Post("/kong-targets/:id/test", handler.TestKongTarget)
 	app.Get("/jobs", handler.Jobs)
+	app.Post("/jobs/clear", handler.ClearJobs)
 	app.Get("/jobs/:id", handler.JobDetail)
 
 	return app

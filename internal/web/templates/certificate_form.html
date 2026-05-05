@@ -70,18 +70,19 @@
                   <label class="form-label" for="renew_before_days">Renew before expiry</label>
                   <div class="input-group">
                     <input class="form-control {{ if fieldError .Errors "renew_before_days" }}is-invalid{{ end }}"
-                      id="renew_before_days" name="renew_before_days" type="number" min="1"
-                      value="{{ .Form.RenewBeforeDays }}"
+                      id="renew_before_days" name="renew_before_days" type="number" min="1" max="90"
+                      value="{{ .Form.RenewBeforeDays }}" data-auto-renew-days
                       {{ if fieldError .Errors "renew_before_days" }}aria-describedby="error-renew-before-days" aria-invalid="true"{{ end }}>
                     <span class="input-group-text">days</span>
                   </div>
+                  <div class="form-hint">Allowed range: 1-90 days. Used only when auto renew is enabled.</div>
                   {{ with fieldError .Errors "renew_before_days" }}<div class="invalid-feedback d-block" id="error-renew-before-days">{{ . }}</div>{{
                   end }}
                 </div>
                 <div class="col-12 col-lg-6">
                   <label class="form-check form-switch">
                     <input class="form-check-input" id="auto_renew" name="auto_renew" type="checkbox" {{ if
-                      .Form.AutoRenew }}checked{{ end }}>
+                      .Form.AutoRenew }}checked{{ end }} data-auto-renew-toggle>
                     <span class="form-check-label">
                       <span class="d-block">Auto renew</span>
                       <span class="form-hint">Queue renewal jobs when the certificate reaches the renewal window.</span>

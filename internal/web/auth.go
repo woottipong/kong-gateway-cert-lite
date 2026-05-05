@@ -68,7 +68,7 @@ func NewSessionAuthMiddleware(cfg BasicAuthConfig) fiber.Handler {
 
 		if wantsHTML(c) {
 			returnTo := c.OriginalURL()
-			if returnTo == "" || strings.HasPrefix(returnTo, defaultLoginURL) {
+			if returnTo == "" || returnTo == "/" || strings.HasPrefix(returnTo, defaultLoginURL) {
 				returnTo = "/certificates"
 			}
 			return c.Redirect(defaultLoginURL+"?return_to="+url.QueryEscape(returnTo), fiber.StatusSeeOther)

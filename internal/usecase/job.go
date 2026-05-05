@@ -16,6 +16,7 @@ type JobRepository interface {
 	Get(ctx context.Context, id int64) (domain.Job, error)
 	Create(ctx context.Context, job domain.Job) (int64, error)
 	Update(ctx context.Context, job domain.Job) error
+	DeleteCompleted(ctx context.Context) (int64, error)
 	HasRunningCertificateJob(ctx context.Context, certificateID int64, types []domain.JobType) (bool, error)
 	LatestFailedCertificateJobSince(ctx context.Context, certificateID int64, types []domain.JobType, since time.Time) (*domain.Job, error)
 }
@@ -116,6 +117,13 @@ func (uc *JobUseCase) Complete(ctx context.Context, input JobCompleteInput) erro
 	existing.FinishedAt = &now
 
 	return uc.repository.Update(ctx, existing)
+}
+
+func (uc *JobUseCase) ClearCompleted(ctx context.Context) (int64, error) {
+	if uc == nil || uc.repository == nil {
+		return 0, fmt.Errorf("job dependencies are not configured")
+	}
+	return uc.repository.DeleteCompleted(ctx)
 }
 
 func (uc *JobUseCase) HasRunningCertificateJob(ctx context.Context, certificateID int64, types []domain.JobType) (bool, error) {

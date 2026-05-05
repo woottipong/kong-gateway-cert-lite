@@ -8,7 +8,16 @@
         <div>
           <h2 class="card-title">Operation timeline</h2>
         </div>
-        <div class="card-actions text-secondary">{{ len .Jobs }} of {{ .TotalCount }} records</div>
+        <div class="card-actions d-flex align-items-center gap-2">
+          <span class="text-secondary">{{ len .Jobs }} of {{ .TotalCount }} records</span>
+          {{ if .TotalCount }}
+          <form method="post" action="/jobs/clear"
+            data-confirm="Clear all completed logs? Running jobs will be kept."
+            data-confirm-tone="danger">
+            <button class="btn btn-outline-danger btn-sm" type="submit">Clear all logs</button>
+          </form>
+          {{ end }}
+        </div>
       </div>
       <div class="table-responsive">
         <table class="table table-hover card-table table-vcenter align-middle mb-0">
