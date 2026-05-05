@@ -1,0 +1,26 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="shell" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#242C38"/>
+      <stop offset="0.55" stop-color="#111821"/>
+      <stop offset="1" stop-color="#070A0F"/>
+    </linearGradient>
+    <linearGradient id="page" x1="19" y1="15" x2="46" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1B2430"/>
+      <stop offset="1" stop-color="#0B1017"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="25" y1="23" x2="39" y2="41" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F4F7FB"/>
+      <stop offset="1" stop-color="#AEB8C6"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="64" height="64" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="7" stdDeviation="5" flood-color="#000000" flood-opacity="0.34"/>
+    </filter>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="17" fill="url(#shell)" stroke="#3A4554" stroke-width="2" filter="url(#shadow)"/>
+  <path d="M19 16h17.5L45 24.5V48H19V16Z" fill="url(#page)" stroke="#526071" stroke-width="2"/>
+  <path d="M36.5 16v8.5H45" stroke="#778294" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M26 24.5v16M38.5 25.2L26 33l12.5 7.8" stroke="url(#mark)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M44.5 41.5c3.1.5 5.3 2.6 5.7 5.6" stroke="#1DB954" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="50.2" cy="47.9" r="3.6" fill="#1DB954"/>
+</svg>

@@ -13,6 +13,7 @@ import (
 )
 
 //go:embed static/css/*
+//go:embed static/icons/*
 //go:embed static/js/*
 //go:embed static/tabler/*
 var staticFiles embed.FS
