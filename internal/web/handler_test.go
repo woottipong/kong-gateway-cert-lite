@@ -878,7 +878,7 @@ func TestCertificateDetailDisablesACMEActionsWhenJobIsRunning(t *testing.T) {
 func TestCertificateDetailShowsRetryAfterForRecentACMEFailure(t *testing.T) {
 	database, app := testServer(t)
 	startedAt := time.Now().UTC().Add(-10 * time.Minute).Truncate(time.Second)
-	retryAt := startedAt.Add(30 * time.Minute).Format("2006-01-02 15:04 UTC")
+	retryAt := startedAt.Add(15 * time.Minute).Format("2006-01-02 15:04 UTC")
 	_, err := database.Exec(`
 		INSERT INTO certificates (
 			name, primary_domain, domains_json, email, snis_json,
@@ -903,9 +903,9 @@ func TestCertificateDetailShowsRetryAfterForRecentACMEFailure(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Certificate action paused.",
-		"The last issue or renew attempt failed recently. Wait 30 minutes before retrying.",
+		"The last issue or renew attempt failed recently. Wait 15 minutes before retrying.",
 		"Retry after " + retryAt + ".",
-		`title="The last issue or renew attempt failed recently. Wait 30 minutes before retrying."`,
+		`title="The last issue or renew attempt failed recently. Wait 15 minutes before retrying."`,
 		"disabled",
 	} {
 		if !strings.Contains(body, want) {
