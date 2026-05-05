@@ -170,27 +170,25 @@
               <div class="list-group-item px-0">
                 <div class="d-flex gap-3 align-items-start">
                   <span
-                    class="avatar avatar-sm bg-{{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}success{{ else }}secondary{{ end }}-lt text-{{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}success{{ else }}secondary{{ end }}">3</span>
+                    class="avatar avatar-sm bg-{{ .Certificate.SyncWorkflowStatusTone }}-lt text-{{ .Certificate.SyncWorkflowStatusTone }}">3</span>
                   <div class="flex-fill">
                     <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                       <strong>Sync to Kong</strong>
                       <span
-                        class="badge bg-{{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}success{{ else }}secondary{{ end }}-lt text-{{ if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}success{{ else }}secondary{{ end }}">{{
-                        if and .Certificate.Certificate.CertPath (gt .Certificate.LinkedTargetCount 0) }}Ready{{ else
-                        }}Waiting{{ end }}</span>
+                        class="badge bg-{{ .Certificate.SyncWorkflowStatusTone }}-lt text-{{ .Certificate.SyncWorkflowStatusTone }}">{{
+                        .Certificate.SyncWorkflowStatusLabel }}</span>
                     </div>
                     {{ if not .Certificate.Certificate.CertPath }}
-                    <div class="text-secondary small mb-3">Sync becomes available after the certificate has been issued.
-                    </div>
+                    <div class="text-secondary small mb-3">{{ .Certificate.SyncWorkflowDescription }}</div>
                     <button class="btn btn-outline-secondary btn-sm" type="button" disabled>Sync to Kong</button>
                     {{ else if eq .Certificate.LinkedTargetCount 0 }}
-                    <div class="text-secondary small mb-3">Link at least one Kong target before syncing.</div>
+                    <div class="text-secondary small mb-3">{{ .Certificate.SyncWorkflowDescription }}</div>
                     <button class="btn btn-outline-secondary btn-sm" type="button" disabled>Sync to Kong</button>
                     {{ else }}
-                    <div class="text-secondary small mb-3">Push this certificate to the linked Kong targets.</div>
+                    <div class="text-secondary small mb-3">{{ .Certificate.SyncWorkflowDescription }}</div>
                     <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/sync"
-                      data-confirm="Sync this certificate to linked Kong targets?">
-                      <button class="btn btn-success btn-sm" type="submit">Sync to Kong</button>
+                      data-confirm="{{ .Certificate.SyncConfirmMessage }}">
+                      <button class="btn btn-success btn-sm" type="submit">{{ .Certificate.SyncButtonLabel }}</button>
                     </form>
                     {{ end }}
                   </div>
@@ -211,32 +209,44 @@
           </div>
           <div class="card-body">
             {{ if .Certificate.LinkedTargets }}
-            <form method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/targets">
+            <form id="linked-targets-form" method="post" action="/certificates/{{ .Certificate.Certificate.ID }}/targets"></form>
               <div class="list-group list-group-flush">
                 {{ range .Certificate.LinkedTargets }}
-                <label class="list-group-item px-0">
+                <div class="list-group-item px-0">
                   <div class="d-flex gap-3 align-items-start">
-                    <input class="form-check-input mt-1" type="checkbox" name="kong_target_ids" value="{{ .Target.ID }}"
-                      {{ if .IsLinked }}checked{{ end }}>
+                    <input class="form-check-input linked-target-checkbox" id="kong_target_{{ .Target.ID }}" form="linked-targets-form" type="checkbox"
+                      name="kong_target_ids" value="{{ .Target.ID }}" {{ if .IsLinked }}checked{{ end }}>
                     <div class="flex-fill">
-                      <div class="d-flex flex-wrap justify-content-between gap-2">
-                        <span class="fw-semibold">{{ .Target.Name }}</span>
-                        <span class="badge bg-{{ .SyncStatusTone }}-lt text-{{ .SyncStatusTone }}">{{ .SyncStatusLabel
-                          }}</span>
+                      <div class="d-flex flex-column flex-lg-row justify-content-between gap-2">
+                        <div>
+                          <div class="d-flex flex-wrap align-items-center gap-2">
+                            <label class="fw-semibold mb-0" for="kong_target_{{ .Target.ID }}">{{ .Target.Name }}</label>
+                            <span class="badge bg-{{ .SyncStatusTone }}-lt text-{{ .SyncStatusTone }}">{{ .SyncStatusLabel
+                              }}</span>
+                          </div>
+                          <div class="text-secondary small">{{ .Target.Environment }} · {{ .Target.AdminURL }}</div>
+                          {{ if .KongCertificateID }}<div class="text-secondary small">Kong certificate id: {{
+                            .KongCertificateID }}</div>{{ end }}
+                          {{ if .LastError }}<div class="text-danger small">{{ .LastError }}</div>{{ end }}
+                        </div>
+                        {{ if and .IsLinked $.Certificate.Certificate.CertPath }}
+                        <div class="d-flex align-items-start">
+                          <form method="post"
+                            action="/certificates/{{ $.Certificate.Certificate.ID }}/targets/{{ .Target.ID }}/sync"
+                            data-confirm="{{ .SyncConfirm }}">
+                            <button class="btn btn-outline-success btn-sm" type="submit">{{ .SyncActionLabel }}</button>
+                          </form>
+                        </div>
+                        {{ end }}
                       </div>
-                      <div class="text-secondary small">{{ .Target.Environment }} · {{ .Target.AdminURL }}</div>
-                      {{ if .KongCertificateID }}<div class="text-secondary small">Kong certificate id: {{
-                        .KongCertificateID }}</div>{{ end }}
-                      {{ if .LastError }}<div class="text-danger small">{{ .LastError }}</div>{{ end }}
                     </div>
                   </div>
-                </label>
+                </div>
                 {{ end }}
               </div>
               <div class="mt-3">
-                <button class="btn btn-outline-secondary" type="submit">Save linked targets</button>
+                <button class="btn btn-outline-secondary" form="linked-targets-form" type="submit">Save linked targets</button>
               </div>
-            </form>
             {{ else }}
             <div class="empty">
               <div class="empty-title">No Kong targets available</div>

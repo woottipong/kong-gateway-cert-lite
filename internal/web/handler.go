@@ -337,6 +337,33 @@ func (h *Handler) SyncCertificate(c *fiber.Ctx) error {
 	return c.Redirect("/certificates/"+strconv.FormatInt(id, 10), fiber.StatusSeeOther)
 }
 
+func (h *Handler) SyncCertificateTarget(c *fiber.Ctx) error {
+	id, err := usecase.ParseID(c.Params("id"))
+	if err != nil {
+		return fiber.ErrNotFound
+	}
+	targetID, err := usecase.ParseID(c.Params("target_id"))
+	if err != nil {
+		return fiber.ErrNotFound
+	}
+
+	if err := h.kongSync.SyncCertificateTarget(c.UserContext(), id, targetID); err != nil {
+		if errors.Is(err, usecase.ErrNotFound) {
+			return fiber.ErrNotFound
+		}
+		return h.serverError(c, "sync certificate target", err)
+	}
+
+	flashTone := "success"
+	flashMessage := "Kong target sync completed."
+	if certificate, err := h.certificates.Get(c.UserContext(), id); err == nil && certificateTargetHasFailedSync(certificate, targetID) {
+		flashTone = "danger"
+		flashMessage = "Kong target sync failed. Review linked target status below."
+	}
+	h.setFlash(c, flashTone, flashMessage)
+	return c.Redirect("/certificates/"+strconv.FormatInt(id, 10), fiber.StatusSeeOther)
+}
+
 func (h *Handler) IssueCertificate(c *fiber.Ctx) error {
 	id, err := usecase.ParseID(c.Params("id"))
 	if err != nil {
@@ -934,6 +961,15 @@ func certificateHasFailedSync(certificate usecase.CertificateView) bool {
 	for _, target := range certificate.LinkedTargets {
 		if target.IsLinked && target.SyncStatusTone == "danger" {
 			return true
+		}
+	}
+	return false
+}
+
+func certificateTargetHasFailedSync(certificate usecase.CertificateView, targetID int64) bool {
+	for _, target := range certificate.LinkedTargets {
+		if target.Target.ID == targetID {
+			return target.IsLinked && target.SyncStatusTone == "danger"
 		}
 	}
 	return false

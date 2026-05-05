@@ -53,15 +53,7 @@ func (uc *KongSyncUseCase) SyncCertificate(ctx context.Context, certificateID in
 		return fmt.Errorf("kong sync dependencies are not configured")
 	}
 
-	certificate, err := uc.certificates.Get(ctx, certificateID)
-	if err != nil {
-		if errors.Is(err, domain.ErrNotFound) {
-			return ErrNotFound
-		}
-		return err
-	}
-
-	linkedTargets, err := uc.certificates.ListSyncTargets(ctx, certificateID)
+	certificate, linkedTargets, err := uc.syncInputs(ctx, certificateID)
 	if err != nil {
 		return err
 	}
@@ -84,6 +76,58 @@ func (uc *KongSyncUseCase) SyncCertificate(ctx context.Context, certificateID in
 	}
 
 	return nil
+}
+
+func (uc *KongSyncUseCase) SyncCertificateTarget(ctx context.Context, certificateID int64, kongTargetID int64) error {
+	if uc.certificates == nil || uc.targets == nil || uc.jobs == nil || uc.client == nil {
+		return fmt.Errorf("kong sync dependencies are not configured")
+	}
+
+	certificate, linkedTargets, err := uc.syncInputs(ctx, certificateID)
+	if err != nil {
+		return err
+	}
+
+	var selectedMapping domain.CertificateKongTarget
+	found := false
+	for _, mapping := range linkedTargets {
+		if mapping.KongTargetID == kongTargetID {
+			selectedMapping = mapping
+			found = true
+			break
+		}
+	}
+	if !found {
+		return ErrNotFound
+	}
+
+	target, err := uc.targets.Get(ctx, selectedMapping.KongTargetID)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+
+	certPEM, keyPEM, readErr := readCertificateFiles(certificate.CertPath, certificate.KeyPath)
+	return uc.syncTarget(ctx, certificate, target, selectedMapping, certPEM, keyPEM, readErr)
+}
+
+func (uc *KongSyncUseCase) syncInputs(ctx context.Context, certificateID int64) (domain.Certificate, []domain.CertificateKongTarget, error) {
+	certificate, err := uc.certificates.Get(ctx, certificateID)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return domain.Certificate{}, nil, ErrNotFound
+		}
+		return domain.Certificate{}, nil, err
+	}
+
+	linkedTargets, err := uc.certificates.ListSyncTargets(ctx, certificateID)
+	if err != nil {
+		return domain.Certificate{}, nil, err
+	}
+
+	return certificate, linkedTargets, nil
 }
 
 func (uc *KongSyncUseCase) syncTarget(ctx context.Context, certificate domain.Certificate, target domain.KongTarget, mapping domain.CertificateKongTarget, certPEM string, keyPEM string, readErr error) error {

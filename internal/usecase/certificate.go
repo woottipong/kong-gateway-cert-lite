@@ -56,13 +56,18 @@ type CertificateFormData struct {
 }
 
 type CertificateView struct {
-	Certificate       domain.Certificate
-	Type              string
-	Expires           string
-	Remaining         string
-	StatusLabel       string
-	LinkedTargetCount int
-	LinkedTargets     []CertificateTargetLinkView
+	Certificate             domain.Certificate
+	Type                    string
+	Expires                 string
+	Remaining               string
+	StatusLabel             string
+	LinkedTargetCount       int
+	LinkedTargets           []CertificateTargetLinkView
+	SyncWorkflowStatusLabel string
+	SyncWorkflowStatusTone  string
+	SyncWorkflowDescription string
+	SyncButtonLabel         string
+	SyncConfirmMessage      string
 }
 
 type CertificateTargetLinkView struct {
@@ -72,6 +77,8 @@ type CertificateTargetLinkView struct {
 	SyncStatusTone    string
 	KongCertificateID string
 	LastError         string
+	SyncActionLabel   string
+	SyncConfirm       string
 }
 
 type ValidationError struct {
@@ -129,6 +136,7 @@ func (uc *CertificateUseCase) Get(ctx context.Context, id int64) (CertificateVie
 	view := buildCertificateView(certificate)
 	view.LinkedTargetCount = len(links)
 	view.LinkedTargets = buildCertificateTargetLinkViews(targets, links)
+	view.applySyncWorkflowState(links)
 
 	return view, nil
 }
@@ -271,11 +279,16 @@ func splitLines(value string) []string {
 
 func buildCertificateView(certificate domain.Certificate) CertificateView {
 	view := CertificateView{
-		Certificate: certificate,
-		Type:        certificateType(certificate.Domains),
-		Expires:     "Not issued",
-		Remaining:   "-",
-		StatusLabel: statusLabel(certificate.Status),
+		Certificate:             certificate,
+		Type:                    certificateType(certificate.Domains),
+		Expires:                 "Not issued",
+		Remaining:               "-",
+		StatusLabel:             statusLabel(certificate.Status),
+		SyncWorkflowStatusLabel: "Waiting",
+		SyncWorkflowStatusTone:  "secondary",
+		SyncWorkflowDescription: "Sync becomes available after the certificate has been issued.",
+		SyncButtonLabel:         "Sync all",
+		SyncConfirmMessage:      "Sync this certificate to linked Kong targets?",
 	}
 
 	if certificate.ExpiresAt != nil {
@@ -285,6 +298,38 @@ func buildCertificateView(certificate domain.Certificate) CertificateView {
 	}
 
 	return view
+}
+
+func (view *CertificateView) applySyncWorkflowState(links []domain.CertificateKongTarget) {
+	if strings.TrimSpace(view.Certificate.CertPath) == "" {
+		return
+	}
+	if len(links) == 0 {
+		view.SyncWorkflowDescription = "Link at least one Kong target before syncing."
+		return
+	}
+
+	view.SyncWorkflowStatusLabel = "Ready"
+	view.SyncWorkflowStatusTone = "success"
+	view.SyncWorkflowDescription = "Push this certificate to the linked Kong targets."
+	if allLinkedTargetsSynced(links) {
+		view.SyncWorkflowStatusLabel = "Synced"
+		view.SyncWorkflowDescription = "Already synced to linked Kong targets. Use manual re-sync only when you need to push again."
+		view.SyncButtonLabel = "Sync all again"
+		view.SyncConfirmMessage = "This certificate is already synced. Run a manual re-sync to linked Kong targets?"
+	}
+}
+
+func allLinkedTargetsSynced(links []domain.CertificateKongTarget) bool {
+	if len(links) == 0 {
+		return false
+	}
+	for _, link := range links {
+		if link.SyncStatus != domain.SyncStatusSynced || strings.TrimSpace(link.KongCertificateID) == "" || strings.TrimSpace(link.LastError) != "" {
+			return false
+		}
+	}
+	return true
 }
 
 func buildCertificateTargetLinkViews(targets []domain.KongTarget, links []domain.CertificateKongTarget) []CertificateTargetLinkView {
@@ -307,11 +352,31 @@ func buildCertificateTargetLinkViews(targets []domain.KongTarget, links []domain
 			view.SyncStatusTone = statusClassForValue(string(link.SyncStatus))
 			view.KongCertificateID = link.KongCertificateID
 			view.LastError = link.LastError
+			view.SyncActionLabel = syncActionLabel(link)
+			view.SyncConfirm = syncConfirmMessage(link, target.Name)
 		}
 		views = append(views, view)
 	}
 
 	return views
+}
+
+func syncActionLabel(link domain.CertificateKongTarget) string {
+	switch link.SyncStatus {
+	case domain.SyncStatusSynced:
+		return "Sync again"
+	case domain.SyncStatusFailed:
+		return "Retry sync"
+	default:
+		return "Sync"
+	}
+}
+
+func syncConfirmMessage(link domain.CertificateKongTarget, targetName string) string {
+	if link.SyncStatus == domain.SyncStatusSynced {
+		return "This target is already synced. Run a manual re-sync for " + targetName + "?"
+	}
+	return "Sync this certificate to " + targetName + "?"
 }
 
 func uniqueSortedIDs(ids []int64) []int64 {

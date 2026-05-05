@@ -252,6 +252,36 @@ strong {
   color: rgba(181, 191, 204, 0.5);
 }
 
+.form-check-input {
+  background-color: rgba(244, 255, 247, 0.06);
+  border: 2px solid rgba(181, 191, 204, 0.58);
+  box-shadow: inset 0 1px 0 rgba(244, 255, 247, 0.08);
+}
+
+.form-check-input:hover {
+  border-color: rgba(68, 209, 119, 0.78);
+}
+
+.form-check-input:focus {
+  border-color: #44d177;
+  box-shadow: 0 0 0 0.2rem rgba(29, 185, 84, 0.16);
+}
+
+.form-check-input:checked {
+  background-color: var(--app-accent);
+  border-color: #44d177;
+  box-shadow:
+    inset 0 1px 0 rgba(244, 255, 247, 0.26),
+    0 0 0 0.18rem rgba(29, 185, 84, 0.14);
+}
+
+.linked-target-checkbox {
+  flex: 0 0 auto;
+  height: 1.2rem;
+  margin-top: 0.15rem !important;
+  width: 1.2rem;
+}
+
 .btn-outline-secondary {
   border-color: rgba(181, 191, 204, 0.28);
   color: var(--app-muted-strong);

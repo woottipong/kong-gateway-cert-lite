@@ -840,7 +840,9 @@ func TestCertificateDetailShowsSyncReadyWorkflowForIssuedCertificate(t *testing.
 		">Renew now<",
 		`data-submitting-label="Renewing..."`,
 		`action="/certificates/1/sync"`,
-		">Sync to Kong<",
+		">Sync all<",
+		`action="/certificates/1/targets/1/sync"`,
+		">Sync<",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("expected detail body to contain %q", want)
@@ -848,6 +850,54 @@ func TestCertificateDetailShowsSyncReadyWorkflowForIssuedCertificate(t *testing.
 	}
 	if strings.Contains(body, `action="/certificates/1/issue"`) {
 		t.Fatal("expected issued certificate detail to stop presenting issue action as available")
+	}
+}
+
+func TestCertificateDetailShowsManualResyncForSyncedCertificate(t *testing.T) {
+	database, app := testServer(t)
+	_, err := database.Exec(`
+		INSERT INTO certificates (
+			name, primary_domain, domains_json, email, snis_json,
+			cert_path, key_path, status
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, "Synced wildcard", "synced.example.com", `["synced.example.com"]`, "ops@example.com", `["synced.example.com"]`, "/data/certs/synced/fullchain.pem", "/data/certs/synced/privkey.pem", "active")
+	if err != nil {
+		t.Fatalf("insert certificate: %v", err)
+	}
+	_, err = database.Exec(`
+		INSERT INTO kong_targets (
+			name, environment, admin_url, auth_type,
+			auth_header_name, auth_header_value, status
+		) VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, "Production Kong", "production", "https://prod-kong.internal:8444", "none", "", "", "online")
+	if err != nil {
+		t.Fatalf("insert kong target: %v", err)
+	}
+	_, err = database.Exec(`
+		INSERT INTO certificate_kong_targets (
+			certificate_id, kong_target_id, kong_certificate_id, sync_status
+		) VALUES (?, ?, ?, ?)
+	`, 1, 1, "kong-cert-1", "synced")
+	if err != nil {
+		t.Fatalf("insert certificate link: %v", err)
+	}
+
+	resp, body := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/certificates/1", nil))
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected detail status 200, got %d", resp.StatusCode)
+	}
+	for _, want := range []string{
+		"Synced",
+		"Already synced to linked Kong targets.",
+		`data-confirm="This certificate is already synced. Run a manual re-sync to linked Kong targets?"`,
+		">Sync all again<",
+		`action="/certificates/1/targets/1/sync"`,
+		">Sync again<",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected detail body to contain %q", want)
+		}
 	}
 }
 
@@ -1869,6 +1919,192 @@ func TestSyncCertificateOnlySyncsLinkedKongTargets(t *testing.T) {
 	}
 	if syncJobCount != 1 {
 		t.Fatalf("expected one sync job for linked targets only, got %d", syncJobCount)
+	}
+}
+
+func TestSyncCertificateTargetOnlySyncsSelectedLinkedTarget(t *testing.T) {
+	database, app := testServer(t)
+	certDir := t.TempDir()
+	certPath := filepath.Join(certDir, "tls.crt")
+	keyPath := filepath.Join(certDir, "tls.key")
+	if err := os.WriteFile(certPath, []byte("CERT-PEM"), 0o600); err != nil {
+		t.Fatalf("write cert file: %v", err)
+	}
+	if err := os.WriteFile(keyPath, []byte("KEY-PEM"), 0o600); err != nil {
+		t.Fatalf("write key file: %v", err)
+	}
+
+	firstCalls := 0
+	firstAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		firstCalls++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"kong-cert-1"}`))
+	}))
+	defer firstAPI.Close()
+
+	secondCalls := 0
+	secondAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		secondCalls++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"kong-cert-2"}`))
+	}))
+	defer secondAPI.Close()
+
+	_, err := database.Exec(`
+		INSERT INTO certificates (
+			name, primary_domain, domains_json, email, snis_json,
+			cert_path, key_path, status
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, "Production wildcard", "example.com", `["example.com"]`, "admin@example.com", `["example.com"]`, certPath, keyPath, "active")
+	if err != nil {
+		t.Fatalf("insert certificate: %v", err)
+	}
+	_, err = database.Exec(`
+		INSERT INTO kong_targets (
+			name, environment, admin_url, auth_type,
+			auth_header_name, auth_header_value, status
+		) VALUES
+			(?, ?, ?, ?, ?, ?, ?),
+			(?, ?, ?, ?, ?, ?, ?)
+	`,
+		"Production Kong", "production", firstAPI.URL, "none", "", "", "online",
+		"Staging Kong", "staging", secondAPI.URL, "none", "", "", "online",
+	)
+	if err != nil {
+		t.Fatalf("insert kong targets: %v", err)
+	}
+	_, err = database.Exec(`
+		INSERT INTO certificate_kong_targets (
+			certificate_id, kong_target_id, sync_status
+		) VALUES
+			(?, ?, ?),
+			(?, ?, ?)
+	`, 1, 1, "not_synced", 1, 2, "not_synced")
+	if err != nil {
+		t.Fatalf("insert linked targets: %v", err)
+	}
+
+	resp, _ := doRequest(t, app, httptest.NewRequest(http.MethodPost, "/certificates/1/targets/2/sync", nil))
+
+	if resp.StatusCode != fiber.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", resp.StatusCode)
+	}
+	if location := resp.Header.Get("Location"); location != "/certificates/1" {
+		t.Fatalf("expected detail redirect, got %q", location)
+	}
+	if firstCalls != 0 {
+		t.Fatalf("expected unselected target to remain untouched, got %d calls", firstCalls)
+	}
+	if secondCalls != 1 {
+		t.Fatalf("expected selected target to be synced once, got %d calls", secondCalls)
+	}
+
+	var firstStatus string
+	var secondStatus string
+	var secondKongCertificateID string
+	if err := database.QueryRow(`
+		SELECT sync_status
+		FROM certificate_kong_targets
+		WHERE certificate_id = ? AND kong_target_id = ?
+	`, 1, 1).Scan(&firstStatus); err != nil {
+		t.Fatalf("read first sync mapping: %v", err)
+	}
+	if err := database.QueryRow(`
+		SELECT kong_certificate_id, sync_status
+		FROM certificate_kong_targets
+		WHERE certificate_id = ? AND kong_target_id = ?
+	`, 1, 2).Scan(&secondKongCertificateID, &secondStatus); err != nil {
+		t.Fatalf("read second sync mapping: %v", err)
+	}
+	if firstStatus != "not_synced" {
+		t.Fatalf("expected first target to remain not_synced, got %q", firstStatus)
+	}
+	if secondKongCertificateID != "kong-cert-2" || secondStatus != "synced" {
+		t.Fatalf("expected second target to sync, got id=%q status=%q", secondKongCertificateID, secondStatus)
+	}
+
+	var syncJobCount int
+	if err := database.QueryRow(`
+		SELECT COUNT(*) FROM jobs WHERE type = 'sync' AND certificate_id = ? AND kong_target_id = ?
+	`, 1, 2).Scan(&syncJobCount); err != nil {
+		t.Fatalf("count selected target sync jobs: %v", err)
+	}
+	if syncJobCount != 1 {
+		t.Fatalf("expected one sync job for selected target, got %d", syncJobCount)
+	}
+}
+
+func TestSyncCertificateTargetFlashUsesSelectedTargetStatus(t *testing.T) {
+	database, app := testServer(t)
+	certDir := t.TempDir()
+	certPath := filepath.Join(certDir, "tls.crt")
+	keyPath := filepath.Join(certDir, "tls.key")
+	if err := os.WriteFile(certPath, []byte("CERT-PEM"), 0o600); err != nil {
+		t.Fatalf("write cert file: %v", err)
+	}
+	if err := os.WriteFile(keyPath, []byte("KEY-PEM"), 0o600); err != nil {
+		t.Fatalf("write key file: %v", err)
+	}
+
+	adminAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"kong-cert-2"}`))
+	}))
+	defer adminAPI.Close()
+
+	_, err := database.Exec(`
+		INSERT INTO certificates (
+			name, primary_domain, domains_json, email, snis_json,
+			cert_path, key_path, status
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, "Production wildcard", "example.com", `["example.com"]`, "admin@example.com", `["example.com"]`, certPath, keyPath, "active")
+	if err != nil {
+		t.Fatalf("insert certificate: %v", err)
+	}
+	_, err = database.Exec(`
+		INSERT INTO kong_targets (
+			name, environment, admin_url, auth_type,
+			auth_header_name, auth_header_value, status
+		) VALUES
+			(?, ?, ?, ?, ?, ?, ?),
+			(?, ?, ?, ?, ?, ?, ?)
+	`,
+		"Failed Kong", "production", "http://127.0.0.1:65534", "none", "", "", "online",
+		"Healthy Kong", "staging", adminAPI.URL, "none", "", "", "online",
+	)
+	if err != nil {
+		t.Fatalf("insert kong targets: %v", err)
+	}
+	_, err = database.Exec(`
+		INSERT INTO certificate_kong_targets (
+			certificate_id, kong_target_id, sync_status, last_error
+		) VALUES
+			(?, ?, ?, ?),
+			(?, ?, ?, ?)
+	`, 1, 1, "failed", "previous failure", 1, 2, "not_synced", "")
+	if err != nil {
+		t.Fatalf("insert linked targets: %v", err)
+	}
+
+	resp, _ := doRequest(t, app, httptest.NewRequest(http.MethodPost, "/certificates/1/targets/2/sync", nil))
+
+	if resp.StatusCode != fiber.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", resp.StatusCode)
+	}
+
+	detailReq := httptest.NewRequest(http.MethodGet, "/certificates/1", nil)
+	for _, cookie := range resp.Cookies() {
+		detailReq.AddCookie(cookie)
+	}
+	detailResp, body := doRequest(t, app, detailReq)
+	if detailResp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected detail status 200, got %d", detailResp.StatusCode)
+	}
+	if !strings.Contains(body, "Kong target sync completed.") {
+		t.Fatalf("expected selected target success flash, got %q", body)
+	}
+	if strings.Contains(body, "Kong target sync failed.") {
+		t.Fatalf("expected unrelated failed target not to drive selected target flash, got %q", body)
 	}
 }
 

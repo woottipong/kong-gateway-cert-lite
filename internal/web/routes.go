@@ -47,6 +47,7 @@ func NewApp(logger *slog.Logger, certificates *usecase.CertificateUseCase, acme 
 	app.Post("/certificates/:id/delete", handler.DeleteCertificate)
 	app.Post("/certificates/:id/targets", handler.UpdateCertificateTargets)
 	app.Post("/certificates/:id/sync", handler.SyncCertificate)
+	app.Post("/certificates/:id/targets/:target_id/sync", handler.SyncCertificateTarget)
 	app.Get("/kong-targets", handler.KongTargets)
 	app.Get("/kong-targets/new", handler.NewKongTarget)
 	app.Post("/kong-targets", handler.CreateKongTarget)
