@@ -22,7 +22,7 @@ type SyncKongTargetRepository interface {
 }
 
 type KongCertificateSyncClient interface {
-	SyncCertificate(ctx context.Context, target domain.KongTarget, existingKongCertificateID string, certPEM string, keyPEM string, snis []string) (string, string, error)
+	SyncCertificate(ctx context.Context, target domain.KongTarget, existingKongCertificateID string, certPEM string, keyPEM string, snis []string, tags []string) (string, string, error)
 }
 
 type KongSyncUseCase struct {
@@ -110,7 +110,7 @@ func (uc *KongSyncUseCase) syncTarget(ctx context.Context, certificate domain.Ce
 		message = "Certificate sync failed: " + readErr.Error()
 		logOutput = "Unable to read certificate files for sync\n" + readErr.Error()
 	} else {
-		kongCertificateID, detail, syncErr := uc.client.SyncCertificate(ctx, target, mapping.KongCertificateID, certPEM, keyPEM, certificate.SNIs)
+		kongCertificateID, detail, syncErr := uc.client.SyncCertificate(ctx, target, mapping.KongCertificateID, certPEM, keyPEM, certificate.SNIs, kongCertificateTags(certificate))
 		logOutput = strings.TrimSpace("Syncing certificate to " + target.AdminURL + "\n" + detail)
 		if syncErr != nil {
 			mapping.SyncStatus = domain.SyncStatusFailed
@@ -161,6 +161,17 @@ func (uc *KongSyncUseCase) syncTarget(ctx context.Context, certificate domain.Ce
 	})
 
 	return nil
+}
+
+func kongCertificateTags(certificate domain.Certificate) []string {
+	tags := []string{"cert-lite", "non-wildcard"}
+	for _, sni := range certificate.SNIs {
+		if strings.Contains(strings.TrimSpace(sni), "*") {
+			tags[1] = "wildcard"
+			break
+		}
+	}
+	return tags
 }
 
 func readCertificateFiles(certPath string, keyPath string) (string, string, error) {

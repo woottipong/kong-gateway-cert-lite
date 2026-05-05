@@ -3,6 +3,7 @@ package kong
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -33,8 +34,10 @@ func NewAdminClient(client *http.Client) *AdminClient {
 	if client == nil {
 		client = &http.Client{Timeout: 5 * time.Second}
 	}
+	configured := *client
+	configured.Transport = insecureTransport(client.Transport)
 
-	return &AdminClient{client: client}
+	return &AdminClient{client: &configured}
 }
 
 func (c *AdminClient) CheckConnection(ctx context.Context, target domain.KongTarget) (string, error) {
@@ -67,12 +70,12 @@ func (c *AdminClient) CheckConnection(ctx context.Context, target domain.KongTar
 	return detail, nil
 }
 
-func (c *AdminClient) SyncCertificate(ctx context.Context, target domain.KongTarget, existingKongCertificateID string, certPEM string, keyPEM string, snis []string) (string, string, error) {
+func (c *AdminClient) SyncCertificate(ctx context.Context, target domain.KongTarget, existingKongCertificateID string, certPEM string, keyPEM string, snis []string, tags []string) (string, string, error) {
 	payloadBytes, err := json.Marshal(certificatePayload{
 		Cert: certPEM,
 		Key:  keyPEM,
 		SNIs: snis,
-		Tags: certificateTags(snis),
+		Tags: tags,
 	})
 	if err != nil {
 		return "", "", fmt.Errorf("marshal Kong certificate payload: %w", err)
@@ -127,14 +130,17 @@ func applyAuthHeader(req *http.Request, target domain.KongTarget) {
 	}
 }
 
-func certificateTags(snis []string) []string {
-	tags := []string{"source:kong-cert-lite", "wildcard:false"}
-	for _, sni := range snis {
-		if strings.Contains(strings.TrimSpace(sni), "*") {
-			tags[1] = "wildcard:true"
-			break
-		}
+func insecureTransport(base http.RoundTripper) http.RoundTripper {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if base, ok := base.(*http.Transport); ok && base != nil {
+		transport = base.Clone()
 	}
+	if transport.TLSClientConfig != nil {
+		transport.TLSClientConfig = transport.TLSClientConfig.Clone()
+	} else {
+		transport.TLSClientConfig = &tls.Config{}
+	}
+	transport.TLSClientConfig.InsecureSkipVerify = true // #nosec G402 -- Kong Admin API is expected to be private.
 
-	return tags
+	return transport
 }

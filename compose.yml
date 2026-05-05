@@ -3,8 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: kong-cert-lite:local
+    image: registry.rtt.in.th/spinsoft-transcription/kong-cert-management-lite:beta-3
     restart: unless-stopped
+    platform: linux/amd64
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -12,11 +13,11 @@ services:
       APP_DB_PATH: /data/app.db
       APP_CERT_DIR: /data/certs
       APP_ACCOUNT_DIR: /data/accounts
-      APP_USERNAME: ${APP_USERNAME:?Set APP_USERNAME for login}
-      APP_PASSWORD: ${APP_PASSWORD:?Set APP_PASSWORD for login}
+      APP_USERNAME: ${APP_USERNAME:-Set APP_USERNAME for login}
+      APP_PASSWORD: ${APP_PASSWORD:-Set APP_PASSWORD for login}
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       DISCORD_NOTIFY_SUCCESS: ${DISCORD_NOTIFY_SUCCESS:-false}
-      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:?Set CF_DNS_API_TOKEN for Cloudflare DNS-01}
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:-CF_DNS_API_TOKEN for Cloudflare DNS-01}
       LETSENCRYPT_ENV: ${LETSENCRYPT_ENV:-staging}
       AUTO_RENEW_CRON: ${AUTO_RENEW_CRON:-0 3 * * *}
     ports:

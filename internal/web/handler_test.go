@@ -1090,7 +1090,6 @@ func TestCreateKongTargetAndRenderList(t *testing.T) {
 	if count != 1 {
 		t.Fatalf("expected one kong target, got %d", count)
 	}
-
 	listResp, listBody := doRequest(t, app, httptest.NewRequest(http.MethodGet, "/kong-targets", nil))
 	if listResp.StatusCode != fiber.StatusOK {
 		t.Fatalf("expected list status 200, got %d", listResp.StatusCode)
@@ -1447,7 +1446,7 @@ func TestSyncCertificateCreatesKongCertificateAndStoresMapping(t *testing.T) {
 		if len(payload.SNIs) != 2 || payload.SNIs[0] != "example.com" || payload.SNIs[1] != "*.example.com" {
 			t.Fatalf("unexpected SNI payload: %+v", payload.SNIs)
 		}
-		if len(payload.Tags) != 2 || payload.Tags[0] != "source:kong-cert-lite" || payload.Tags[1] != "wildcard:true" {
+		if !hasExactTags(payload.Tags, "cert-lite", "wildcard") {
 			t.Fatalf("unexpected tag payload: %+v", payload.Tags)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -1660,7 +1659,7 @@ func TestSyncCertificateUpdatesExistingKongCertificate(t *testing.T) {
 		if len(payload.SNIs) != 1 || payload.SNIs[0] != "example.com" {
 			t.Fatalf("unexpected SNI payload: %+v", payload.SNIs)
 		}
-		if len(payload.Tags) != 2 || payload.Tags[0] != "source:kong-cert-lite" || payload.Tags[1] != "wildcard:false" {
+		if !hasExactTags(payload.Tags, "cert-lite", "non-wildcard") {
 			t.Fatalf("unexpected tag payload: %+v", payload.Tags)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -2092,6 +2091,22 @@ func testApp(t *testing.T) *fiber.App {
 
 	_, app := testServer(t)
 	return app
+}
+
+func hasExactTags(tags []string, want ...string) bool {
+	if len(tags) != len(want) {
+		return false
+	}
+	seen := make(map[string]struct{}, len(tags))
+	for _, tag := range tags {
+		seen[tag] = struct{}{}
+	}
+	for _, tag := range want {
+		if _, ok := seen[tag]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func testServer(t *testing.T) (*sql.DB, *fiber.App) {

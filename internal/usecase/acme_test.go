@@ -416,12 +416,13 @@ type fakeKongCertificateSyncClient struct {
 	err               error
 }
 
-func (f *fakeKongCertificateSyncClient) SyncCertificate(ctx context.Context, target domain.KongTarget, existingKongCertificateID string, certPEM string, keyPEM string, snis []string) (string, string, error) {
+func (f *fakeKongCertificateSyncClient) SyncCertificate(ctx context.Context, target domain.KongTarget, existingKongCertificateID string, certPEM string, keyPEM string, snis []string, tags []string) (string, string, error) {
 	_ = ctx
 	_ = target
 	_ = existingKongCertificateID
 	_ = keyPEM
 	_ = snis
+	_ = tags
 	f.calls++
 	f.certPEM = certPEM
 	return f.kongCertificateID, f.detail, f.err

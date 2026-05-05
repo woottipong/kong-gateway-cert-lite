@@ -236,12 +236,13 @@ type liveRenewKongSyncClient struct {
 	certPEM string
 }
 
-func (c *liveRenewKongSyncClient) SyncCertificate(ctx context.Context, target domain.KongTarget, existingKongCertificateID string, certPEM string, keyPEM string, snis []string) (string, string, error) {
+func (c *liveRenewKongSyncClient) SyncCertificate(ctx context.Context, target domain.KongTarget, existingKongCertificateID string, certPEM string, keyPEM string, snis []string, tags []string) (string, string, error) {
 	_ = ctx
 	_ = target
 	_ = existingKongCertificateID
 	_ = keyPEM
 	_ = snis
+	_ = tags
 	c.calls++
 	c.certPEM = certPEM
 	return "live-renew-kong-certificate", "live renew sync verification", nil
